@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#12d633" />
+    <title>Face Race Interface v1.0</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    height: 90%;
+}
+
+/* Zones */
+#left, #right, #center {
+    padding: 20px;
+}
+
+#left {
+    flex: 1; /* Takes equal width */
+    text-align: left;
+}
+
+#center {
+    flex: 2; /* Takes more space */
+    text-align: center;
+}
+
+#right {
+    flex: 1;
+    text-align: left;
+}
+
+/* Webcam Styling */
+video {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    border: 1px solid black;
+}
+
+/* Drag & Drop Zone */
+#dropZone {
+    border: 2px dashed #007bff;
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+#dropZone:hover {
+    background-color: #e2e6ea;
+}
+
+/* Gradient Background */
+body::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 200px; /* Adjust as needed */
+    background: linear-gradient(to top, #12d633, white);
+    z-index: -1;
+}
+
+#right button {
+    
+    font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+
+    display: block;
+    width: 150px;
+    margin: 5px auto;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+}
+
+#right button:hover {
+    background-color: #ddd;
+}
+
+/* Popup styling */
+.popup {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    width: 50%;
+    min-width: 300px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* Textarea styling */
+textarea {
+    width: 100%;
+    height: 100px;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none;
+    font-size: 16px;
+}
+
+
+
+    </style>
+</head>
+<body>
+
+<h1>Face Race tjollahoppsannsa! Hvis du leser dette har noe gått i stykker</h1>
+
+<div id="container">
+    <div id="left">
+        <h1>Camera Selector</h1>
+        <label for="cameraSelect">Select Camera:</label>
+        <select id="cameraSelect"></select>
+        <button onclick="refreshCameraList()">🔄 Refresh List</button>
+        <h2>Available Cameras:</h2>
+        <pre id="deviceList">Loading...</pre>
+        <video id="webcam" autoplay playsinline></video>
+    </div>
+
+    <div id="center">
+        <h1>TensorFlow.js Webcam Classifier</h1>
+        <div id="dropZone">Drag & Drop Model ZIP Here</div>
+        <div id="predictions">
+            <h2>Predictions:</h2>
+            <ul id="predictionList"></ul>
+        </div>
+        <div id="thresholdContainer">
+            <label for="threshold">Threshold (Confidence): </label>
+            <input type="range" id="threshold" min="0" max="100" value="50">
+            <span id="thresholdValue">50</span>%
+        </div>
+    </div>
+
+    <div id="right">
+        <div id="instructionsTitle"><h1>Instructions:</h1></div>
+        <button onclick="switchLanguage('en')">🇬🇧 English</button>
+        <button onclick="switchLanguage('no')">🇳🇴 Norsk</button>
+        <div id="instructionsText1"><i>Lorem Ipsum og andre ripsbærbusker</i></div>
+        <div id="instructionsText2"><i></i></div>
+        <div id="instructionsText3"><i></i></div>
+        <button id="connectButton">Connect to Micro:bit</button>
+        <div id="instructionsText4"><i></i></div>
+        
+        <button id="copyPasteButton"onclick="openPopup()">📋 Copy & Paste Eksempelkode</button>
+        <!-- Popup Window -->
+        <div id="popup" class="popup">
+        <div class="popup-content">
+        <span class="close" onclick="closePopup()">&times;</span>
+        <h2>micro:bit JavaScript Demo</h2>
+        <textarea id="popupText" readonly>
+        
+            serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+                SerialData = serial.readUntil(serial.delimiters(Delimiters.NewLine))
+                basic.showString(SerialData)
+            })
+            let SerialData = ""
+            basic.showLeds(`
+                . . . . .
+                . # . # .
+                . . . . .
+                # # # # #
+                . # # # .
+                `)
+            serial.redirectToUSB()
+            
+        </textarea>
+        <button onclick="copyText()">Copy to Clipboard</button>
+        </div>
+        </div>
+        
+        <br>
+        <div id="instructionsText5"><i></i></div>
+        <br>
+        <div id="instructionsText6"><i></i></div>
+        
+        
+    </div>
+</div>
+
+<h3>v1.0 - 17.03.25</h3>
+
+<!-- TensorFlow.js & JSZip -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.0.0/dist/tf-converter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Kan og lastes ned og legges i /lib for offline-versjon
+<script src="/lib/tf.min.js"></script>
+<script src="/lib/tf-converter.min.js"></script>
+<script src="/lib/jszip.min.js"></script>
+-->
+
+<script>
+let model, webcamElement, classNames, writer, connected = false, lastClassSent = null; currentStream = null;
+
+// Load Model from ZIP
+async function handleZipUpload(file) {
+    const zip = new JSZip();
+    const zipData = await zip.loadAsync(file);
+
+    // Extract model files
+    const modelJSON = await zipData.file("model.json").async("string");
+    const metadataJSON = await zipData.file("metadata.json").async("string");
+    const weightsData = await zipData.file("weights.bin").async("arraybuffer");
+
+    // Parse metadata
+    const metadata = JSON.parse(metadataJSON);
+    classNames = metadata.labels;
+    console.log("✅ Class names loaded:", classNames);
+
+    // Convert JSON to Blob URL
+    const modelBlob = new Blob([modelJSON], { type: "application/json" });
+    const modelURL = URL.createObjectURL(modelBlob);
+
+    // Convert weights to an ArrayBuffer and wrap in a FileReader
+    const weightsBlob = new Blob([weightsData], { type: "application/octet-stream" });
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(weightsBlob);
+
+    reader.onload = async function () {
+        const weightsBuffer = reader.result;
+        const weightsFile = new File([weightsBuffer], "weights.bin", { type: "application/octet-stream" });
+
+        // Load the model
+        try {
+            model = await tf.loadLayersModel(tf.io.browserFiles([new File([modelJSON], "model.json"), weightsFile]));
+            console.log("✅ Model loaded successfully!");
+        } catch (error) {
+            console.error("❌ Error loading model:", error);
+        }
+    };
+}
+
+// Drag & Drop Upload Handler
+const dropZone = document.getElementById("dropZone");
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.backgroundColor = "#e2e6ea";
+});
+dropZone.addEventListener("dragleave", () => {
+    dropZone.style.backgroundColor = "#f8f9fa";
+});
+dropZone.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dropZone.style.backgroundColor = "#f8f9fa";
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".zip")) {
+        console.log("📂 ZIP file received:", file.name);
+        await handleZipUpload(file);
+    } else {
+        alert("Please drop a valid ZIP file.");
+    }
+});
+
+
+// Request permissions and list cameras
+async function getCameras() {
+            try {
+                // Request camera access to get full labels
+                await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // Now list devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                if (videoDevices.length === 0) {
+                    document.getElementById("deviceList").textContent = "No cameras found.";
+                    return;
+                }
+
+                const select = document.getElementById("cameraSelect");
+                select.innerHTML = ""; // Clear old options
+
+                let deviceInfo = "";
+
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement("option");
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Camera ${index + 1}`;
+                    select.appendChild(option);
+
+                    deviceInfo += `📷 ${device.label || "Unknown Camera"}\nID: ${device.deviceId}\n\n`;
+                });
+
+                document.getElementById("deviceList").textContent = deviceInfo;
+
+                // Auto-select first camera
+                if (videoDevices.length > 0) {
+                    setupWebcam(videoDevices[0].deviceId);
+                }
+
+            } catch (error) {
+                console.error("Error accessing cameras:", error);
+                document.getElementById("deviceList").textContent = "⚠️ Cannot access cameras. Check permissions.";
+            }
+        }
+
+        // Switch to selected camera
+        async function setupWebcam(deviceId) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop()); // Stop old stream
+            }
+
+            try {
+                const constraints = { video: { deviceId: { exact: deviceId } } };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                document.getElementById("webcam").srcObject = stream;
+                currentStream = stream;
+                webcamElement = stream;
+            } catch (error) {
+                console.error("Error switching camera:", error);
+            }
+        }
+
+        // Listen for dropdown change
+        document.getElementById("cameraSelect").addEventListener("change", (event) => {
+            setupWebcam(event.target.value);
+        });
+
+        // Refresh camera list
+        function refreshCameraList() {
+            getCameras();
+        }
+
+
+
+
+// Convert non-ASCII characters - skandinaviske tegn funker ikke på serieport
+function convertToASCIICompatible(str) {
+    const replacements = {
+        'Æ': 'AE', 'Ø': 'OE', 'Å': 'AA',
+        'æ': 'ae', 'ø': 'oe', 'å': 'aa',
+    };
+    return str.split('').map(char => replacements[char] || char).join('');
+}
+
+// Send data over serial
+async function sendDataToMicrobit(signal) {
+    if (!writer) {
+        console.error("❌ No writer available to send data.");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await writer.write(byte);
+        }
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+
+// Connect to Micro:bit
+document.getElementById("connectButton").addEventListener("click", async () => {
+    try {
+        const microbit = await navigator.serial.requestPort();
+        await microbit.open({ baudRate: 115200 });
+        writer = microbit.writable.getWriter();
+        connected = true;
+        console.log("✅ Connected to Micro:bit!");
+        document.getElementById("connectButton").innerText = "Connected";
+    } catch (error) {
+        console.error("❌ Error connecting to Micro:bit:", error);
+    }
+});
+
+// Update UI with predictions
+function updateUI(prediction) {
+    const predictionList = document.getElementById("predictionList");
+    predictionList.innerHTML = "";
+    prediction.forEach((confidence, index) => {
+        const className = classNames[index] || `Class ${index}`;
+        const listItem = document.createElement("li");
+        listItem.textContent = `${className}: ${(confidence * 100).toFixed(2)}%`;
+        predictionList.appendChild(listItem);
+    });
+    document.getElementById("thresholdValue").textContent = document.getElementById("threshold").value;
+}
+
+// Run Prediction
+async function predict() {
+    const videoElement = document.getElementById("webcam"); // ✅ Get the actual <video> element
+
+    if (!model || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
+        console.warn("⚠️ Waiting for webcam...");
+        requestAnimationFrame(predict);
+        return;
+    }
+
+    console.log("🔍 Running prediction...");
+
+    tf.tidy(() => {
+        const videoTensor = tf.browser.fromPixels(videoElement) // ✅ Pass the correct video element
+            .resizeNearestNeighbor([224, 224])
+            .expandDims()
+            .toFloat()
+            .div(255);
+
+        const prediction = model.predict(videoTensor).dataSync();
+        updateUI(Array.from(prediction));
+
+        const threshold = document.getElementById("threshold").value / 100;
+        const maxIndex = prediction.indexOf(Math.max(...prediction));
+        const maxConfidence = prediction[maxIndex];
+
+        if (connected && maxConfidence >= threshold) {
+            const className = classNames[maxIndex];
+            if (className !== lastClassSent) {
+                lastClassSent = className;
+                sendDataToMicrobit(`${className}\n`);
+            }
+        }
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    requestAnimationFrame(predict);
+}
+
+// Oversettelsesbit 
+
+const translations = {
+    en: {
+        title: "Face Race with TensorFlow.js and micro:bit",
+        cameraSelector: "Camera Selector",
+        selectCamera: "Select Camera:",
+        refreshList: "🔄 Refresh List",
+        availableCameras: "Available Cameras:",
+        predictions: "Predictions:",
+        thresholdLabel: "Threshold (Confidence):",
+        connectButton: "Connect to micro:bit",
+        copypasteButton: "📋 Copy & Paste example code",
+        dropZone: "Drag & Drop Model ZIP Here",
+        instructionsTitle: "Instructions:",
+        instructionsText1: "1) Create a model with teachablemachine.withgoogle.com and download as .zip. ",
+        instructionsText2: "2) Drag&Drop onto the zone in the middle to load, then",
+        instructionsText3: "3) press Connect to micro:bit and select your unit. Must be using Chrome or Edge!",
+        instructionsText4: "Your micro:bit should now receive the Class names as serial data! Adjust the Confidence Threshold to suit your needs.",
+        instructionsText5: "If something breaks, press F12 and check the console for errors.",
+        instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
+    },
+    no: {
+        title: "Face Race med TensorFlow.js og micro:bit v1.0",
+        cameraSelector: "Kameravelger",
+        selectCamera: "Velg Kamera:",
+        refreshList: "🔄 Oppdater Liste",
+        availableCameras: "Tilgjengelige Kameraer:",
+        predictions: "Prediksjoner:",
+        thresholdLabel: "Terskel (Sikkerhet):",
+        connectButton: "Koble til micro:bit",
+        copypasteButton: "📋 Copy & Paste eksempelkode",
+        dropZone: "Dra og slipp ZIP-fil av modell her",
+        instructionsTitle: "Instruksjoner:",
+        instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
+        instructionsText2: "2) Dra og slipp filen inn på feltet i midten for å laste inn modellen.",
+        instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp (NB! Bruk Chrome eller Edge).",
+        instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler på seriell-porten! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
+        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg.",
+        instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
+    }
+};
+
+function switchLanguage(lang) {
+    document.querySelector("h1").innerText = translations[lang].title;
+    document.querySelector("#left h2").innerText = translations[lang].availableCameras;
+    document.querySelector("#left h1").innerText = translations[lang].cameraSelector;
+    document.querySelector("label[for='cameraSelect']").innerText = translations[lang].selectCamera;
+    document.querySelector("button[onclick='refreshCameraList()']").innerText = translations[lang].refreshList;
+    document.querySelector("#deviceList").innerText = translations[lang].availableCameras;
+    document.querySelector("#predictions h2").innerText = translations[lang].predictions;
+    document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;
+    document.querySelector("#connectButton").innerText = translations[lang].connectButton;
+    document.querySelector("#copyPasteButton").innerText = translations[lang].copypasteButton;
+    document.querySelector("#dropZone").innerText = translations[lang].dropZone;
+
+    // Update instructions
+    document.querySelector("#instructionsTitle h1").innerText = translations[lang].instructionsTitle;
+    document.querySelector("#instructionsText1").innerHTML = `<i>${translations[lang].instructionsText1}</i>`;
+    document.querySelector("#instructionsText2").innerHTML = `<i>${translations[lang].instructionsText2}</i>`;
+    document.querySelector("#instructionsText3").innerHTML = `<i>${translations[lang].instructionsText3}</i>`;
+    document.querySelector("#instructionsText4").innerHTML = `<i>${translations[lang].instructionsText4}</i>`;
+    document.querySelector("#instructionsText5").innerHTML = `<i>${translations[lang].instructionsText5}</i>`;
+    document.querySelector("#instructionsText6").innerHTML = `<i>${translations[lang].instructionsText6}</i>`;
+
+}
+
+
+function openPopup() {
+    document.getElementById("popup").style.display = "flex";
+}
+
+function closePopup() {
+    document.getElementById("popup").style.display = "none";
+}
+
+function copyText() {
+    let textArea = document.getElementById("popupText");
+    textArea.select();
+    textArea.setSelectionRange(0, 99999); // For mobile devices
+    document.execCommand("copy");
+    alert("Copied to clipboard!");
+}
+
+
+// Start Everything
+async function init() {
+    switchLanguage('no')
+    await getCameras();
+    predict();
+}
+init();
+</script>
+
+</body>
+</html>
