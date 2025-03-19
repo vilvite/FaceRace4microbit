@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>Face Race Interface v1.0</title>
+    <title>Face Race Interface v1.2BT</title>
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -177,22 +177,48 @@ textarea {
         <div id="instructionsText1"><i>Lorem Ipsum og andre ripsbærbusker</i></div>
         <div id="instructionsText2"><i></i></div>
         <div id="instructionsText3"><i></i></div>
-        <button id="connectButton">Connect to Micro:bit</button>
-        <div id="instructionsText4"><i></i></div>
+        <button id="connectButton">Connect to Micro:bit USB serial</button>
+        <!-- <button id="pairingButton">Pair Bluetooth</button> -->
+        <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
         
+        
+        
+        <div id="instructionsText4"><i></i></div>
+        <!--
         <button id="copyPasteButton"onclick="openPopup()">📋 Copy & Paste Eksempelkode</button>
-        <!-- Popup Window -->
+         Popup Window 
         <div id="popup" class="popup">
         <div class="popup-content">
         <span class="close" onclick="closePopup()">&times;</span>
         <h2>micro:bit JavaScript Demo</h2>
+        
+                
         <textarea id="popupText" readonly>
         
+            bluetooth.onBluetoothConnected(function () {
+                basic.showLeds(`
+                    . . # # .
+                    # . # . #
+                    . # # # .
+                    # . # . #
+                    . . # # .
+                    `)
+            })
+            bluetooth.onBluetoothDisconnected(function () {
+                basic.showIcon(IconNames.Sad)
+            })
+            bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+                receivedText = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
+                basic.showString(receivedText)
+            })
             serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
                 SerialData = serial.readUntil(serial.delimiters(Delimiters.NewLine))
                 basic.showString(SerialData)
             })
             let SerialData = ""
+            let receivedText = ""
+            serial.redirectToUSB()
+            bluetooth.startUartService()
             basic.showLeds(`
                 . . . . .
                 . # . # .
@@ -200,18 +226,18 @@ textarea {
                 # # # # #
                 . # # # .
                 `)
-            serial.redirectToUSB()
             
         </textarea>
         <button onclick="copyText()">Copy to Clipboard</button>
         </div>
         </div>
-        
+        -->
         <br>
         <div id="instructionsText5"><i></i></div>
         <br>
         <div id="instructionsText6"><i></i></div>
-        
+        <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_ED92YbDqs77M','_blank')">Demo code USB</button>
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_eK21k2YM7iUf','_blank')">Demo code Bluetooth</button>
         
     </div>
 </div>
@@ -230,7 +256,15 @@ textarea {
 -->
 
 <script>
-let model, webcamElement, classNames, writer, connected = false, lastClassSent = null; currentStream = null;
+let model, webcamElement, classNames, writer, connectedUSB = false, connectedBT = false, lastClassSent = null; currentStream = null;
+
+//BT stuff here
+let microbitDevice;
+let microbitServer;
+let microbitService;
+let microbitCharacteristic;
+
+
 
 // Load Model from ZIP
 async function handleZipUpload(file) {
@@ -374,8 +408,91 @@ function convertToASCIICompatible(str) {
     return str.split('').map(char => replacements[char] || char).join('');
 }
 
-// Send data over serial
-async function sendDataToMicrobit(signal) {
+
+// Connect to Micro:bit over serial
+document.getElementById("connectButton").addEventListener("click", async () => {
+    try {
+        const microbit = await navigator.serial.requestPort();
+        await microbit.open({ baudRate: 115200 });
+        writer = microbit.writable.getWriter();
+        connectedUSB = true;
+        console.log("✅ Connected to Micro:bit!");
+        document.getElementById('connectButtonBT').disabled = true;
+        document.getElementById("connectButton").innerText = "Connected";
+    } catch (error) {
+        console.error("❌ Error connecting to Micro:bit:", error);
+    }
+});
+
+/*
+// Pair with Bluetooth
+document.getElementById("pairingButton").addEventListener("click", async () => {
+    try {
+        console.log('Requesting Bluetooth device...');
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true // Allow any Bluetooth device, no filters
+        });
+        console.log('Paired with device:', device.name || 'Unknown device');
+    } catch (error) {
+        console.error('Bluetooth pairing failed:', error);
+    }
+});
+
+*/
+
+
+
+//connect over BT VIRKET I STED; ARGH! Noe med hvordan microbitten pares i nettleseren. Tester på andre maskiner.
+document.getElementById("connectButtonBT").addEventListener("click", async () => {
+    try {
+        console.log("Requesting micro:bit Bluetooth device...");
+        microbitDevice = await navigator.bluetooth.requestDevice({
+           // acceptAllDevices: true // Allow any Bluetooth device, no filters
+            filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
+            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
+        });
+        
+        console.log("Connecting to GATT Server...");
+        microbitServer = await microbitDevice.gatt.connect();
+        microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        
+        console.log("Finding TX Characteristic...");
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic
+        
+        console.log("Connected to micro:bit via Bluetooth");
+        connectedBT = true;
+        document.getElementById('connectButton').disabled = true;
+        document.getElementById("connectButtonBT").innerText = "Connected";
+    } catch (error) {
+        console.error("Bluetooth connection failed", error);
+    }
+});
+
+
+//more fancy sendDataToMicroBit(BT)
+async function sendDataToMicrobitBT(signal) {
+    if (!microbitCharacteristic) {
+        console.error("❌ No BT connection thingy available to send data");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await microbitCharacteristic.writeValue(byte);
+        }
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+    
+
+
+
+
+// Send data over serial 
+async function sendDataToMicrobitUSB(signal) {
     if (!writer) {
         console.error("❌ No writer available to send data.");
         return;
@@ -392,19 +509,25 @@ async function sendDataToMicrobit(signal) {
     }
 }
 
-// Connect to Micro:bit
-document.getElementById("connectButton").addEventListener("click", async () => {
+/*
+// copypaste fra test-eksempel
+document.getElementById('sendButton').addEventListener('click', async () => {
+    if (!microbitCharacteristic) {
+        alert("Not connected to micro:bit");
+        return;
+    }
+    const message = "HELLO\n"; // Ensure newline is included
     try {
-        const microbit = await navigator.serial.requestPort();
-        await microbit.open({ baudRate: 115200 });
-        writer = microbit.writable.getWriter();
-        connected = true;
-        console.log("✅ Connected to Micro:bit!");
-        document.getElementById("connectButton").innerText = "Connected";
+        console.log("Sending:", message);
+        await microbitCharacteristic.writeValue(new TextEncoder().encode(message));
+        console.log("Message sent: HELLO");
     } catch (error) {
-        console.error("❌ Error connecting to Micro:bit:", error);
+        console.error("Failed to send message", error);
     }
 });
+
+*/
+
 
 // Update UI with predictions
 function updateUI(prediction) {
@@ -445,13 +568,22 @@ async function predict() {
         const maxIndex = prediction.indexOf(Math.max(...prediction));
         const maxConfidence = prediction[maxIndex];
 
-        if (connected && maxConfidence >= threshold) {
+        if (connectedUSB && maxConfidence >= threshold) {
             const className = classNames[maxIndex];
             if (className !== lastClassSent) {
                 lastClassSent = className;
-                sendDataToMicrobit(`${className}\n`);
+                sendDataToMicrobitUSB(`${className}\n`);
             }
         }
+        if (connectedBT && maxConfidence >= threshold) {
+            const className = classNames[maxIndex];
+            if (className !== lastClassSent) {
+                lastClassSent = className;
+                sendDataToMicrobitBT(`${className}\n`);
+            }
+        }
+
+
     });
 
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -469,14 +601,15 @@ const translations = {
         availableCameras: "Available Cameras:",
         predictions: "Predictions:",
         thresholdLabel: "Threshold (Confidence):",
-        connectButton: "Connect to micro:bit",
-        copypasteButton: "📋 Copy & Paste example code",
+        connectButton: "Connect with USB Serial",
+        connectButtonBT: "Connect with Bluetooth (test)",
+      //  copypasteButton: "📋 Copy & Paste example code",
         dropZone: "Drag & Drop Model ZIP Here",
         instructionsTitle: "Instructions:",
         instructionsText1: "1) Create a model with teachablemachine.withgoogle.com and download as .zip. ",
         instructionsText2: "2) Drag&Drop onto the zone in the middle to load, then",
         instructionsText3: "3) press Connect to micro:bit and select your unit. Must be using Chrome or Edge!",
-        instructionsText4: "Your micro:bit should now receive the Class names as serial data! Adjust the Confidence Threshold to suit your needs.",
+        instructionsText4: "Your micro:bit should now receive the Class names over USB or Bluetooth! Adjust the Confidence Threshold to suit your needs.",
         instructionsText5: "If something breaks, press F12 and check the console for errors.",
         instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
     },
@@ -488,14 +621,15 @@ const translations = {
         availableCameras: "Tilgjengelige Kameraer:",
         predictions: "Prediksjoner:",
         thresholdLabel: "Terskel (Sikkerhet):",
-        connectButton: "Koble til micro:bit",
-        copypasteButton: "📋 Copy & Paste eksempelkode",
+        connectButton: "Koble til med USB Serial",
+        connectButtonBT: "Koble til med Bluetooth (test)",
+       // copypasteButton: "📋 Copy & Paste eksempelkode",
         dropZone: "Dra og slipp ZIP-fil av modell her",
         instructionsTitle: "Instruksjoner:",
         instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
         instructionsText2: "2) Dra og slipp filen inn på feltet i midten for å laste inn modellen.",
         instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp (NB! Bruk Chrome eller Edge).",
-        instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler på seriell-porten! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
+        instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over USB eller Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
         instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg.",
         instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
     }
@@ -511,7 +645,8 @@ function switchLanguage(lang) {
     document.querySelector("#predictions h2").innerText = translations[lang].predictions;
     document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;
     document.querySelector("#connectButton").innerText = translations[lang].connectButton;
-    document.querySelector("#copyPasteButton").innerText = translations[lang].copypasteButton;
+    document.querySelector("#connectButtonBT").innerText = translations[lang].connectButtonBT;
+  //  document.querySelector("#copyPasteButton").innerText = translations[lang].copypasteButton;
     document.querySelector("#dropZone").innerText = translations[lang].dropZone;
 
     // Update instructions
