@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>Face Race Interface v1.2BT</title>
+    <title>Face Race Interface v1.3</title>
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -159,6 +159,9 @@ textarea {
     <div id="center">
         <h1>TensorFlow.js Webcam Classifier</h1>
         <div id="dropZone">Drag & Drop Model ZIP Here</div>
+        <input type="file" id="fileInput" style="display:none;" accept=".zip">
+        
+
         <div id="predictions">
             <h2>Predictions:</h2>
             <ul id="predictionList"></ul>
@@ -304,8 +307,29 @@ async function handleZipUpload(file) {
     };
 }
 
-// Drag & Drop Upload Handler
+
+
+// File Input for selecting ZIP file through a dialog
+const fileInput = document.getElementById("fileInput");
+
+// Handle file selection
+fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (file && file.name.endsWith(".zip")) {
+        console.log("📂 ZIP file selected:", file.name);
+        await handleZipUpload(file);
+    } else {
+        alert("Please select a valid ZIP file.");
+    }
+});
+
+
+
+// Click or Drag & Drop Upload Handler
 const dropZone = document.getElementById("dropZone");
+dropZone.addEventListener("click", () => {
+    fileInput.click();
+});
 dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
     dropZone.style.backgroundColor = "#e2e6ea";
@@ -602,7 +626,7 @@ const translations = {
         predictions: "Predictions:",
         thresholdLabel: "Threshold (Confidence):",
         connectButton: "Connect with USB Serial",
-        connectButtonBT: "Connect with Bluetooth (test)",
+        connectButtonBT: "Connect with Bluetooth",
       //  copypasteButton: "📋 Copy & Paste example code",
         dropZone: "Drag & Drop Model ZIP Here",
         instructionsTitle: "Instructions:",
@@ -614,7 +638,7 @@ const translations = {
         instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
     },
     no: {
-        title: "Face Race med TensorFlow.js og micro:bit",
+        title: "Face Race med TensorFlow.js og micro:bit v1.0",
         cameraSelector: "Kameravelger",
         selectCamera: "Velg Kamera:",
         refreshList: "🔄 Oppdater Liste",
@@ -622,7 +646,7 @@ const translations = {
         predictions: "Prediksjoner:",
         thresholdLabel: "Terskel (Sikkerhet):",
         connectButton: "Koble til med USB Serial",
-        connectButtonBT: "Koble til med Bluetooth (test)",
+        connectButtonBT: "Koble til med Bluetooth",
        // copypasteButton: "📋 Copy & Paste eksempelkode",
         dropZone: "Dra og slipp ZIP-fil av modell her",
         instructionsTitle: "Instruksjoner:",
