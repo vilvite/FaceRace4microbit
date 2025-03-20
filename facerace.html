@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>Face Race Interface v1.3</title>
+    <title>Face Race Interface v1.4</title>
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -14,6 +14,22 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
+    
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 10px; /* Adjust for exact placement */
+    right: 10px;
+    width: 91px; /* Adjust the size */
+    height: 96px;
+    background-image: url('images/VILVITE_logo_centered2.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.6;
+    z-index: -1; /* Push it behind all content */
+    
 }
 
 #container {
@@ -144,6 +160,8 @@ textarea {
 <body>
 
 <h1>Face Race tjollahoppsannsa! Hvis du leser dette har noe gått i stykker</h1>
+<!--<div class="fixed-image"></div>-->
+
 
 <div id="container">
     <div id="left">
@@ -188,7 +206,7 @@ textarea {
         
         <div id="instructionsText4"><i></i></div>
         <!--
-        <button id="copyPasteButton"onclick="openPopup()">📋 Copy & Paste Eksempelkode</button>
+        <button id="copyPasteButton"onclick="openPopup()">📋 Copy & Paste Eksempelkode, trengte ikke denne lenger men tar vare på for referanse</button>
          Popup Window 
         <div id="popup" class="popup">
         <div class="popup-content">
@@ -239,13 +257,13 @@ textarea {
         <div id="instructionsText5"><i></i></div>
         <br>
         <div id="instructionsText6"><i></i></div>
-        <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_ED92YbDqs77M','_blank')">Demo code USB</button>
-        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_eK21k2YM7iUf','_blank')">Demo code Bluetooth</button>
+        <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_i2ied6JsmUD3','_blank')">Demo code USB</button>
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_JeYeWD9KTfH5','_blank')">Demo code Bluetooth</button>
         
     </div>
 </div>
 
-<h3>v1.3 - 19.03.25</h3>
+<h3>v1.4 - 20.03.25</h3>
 
 <!-- TensorFlow.js & JSZip -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
@@ -436,7 +454,9 @@ function convertToASCIICompatible(str) {
 // Connect to Micro:bit over serial
 document.getElementById("connectButton").addEventListener("click", async () => {
     try {
+        document.getElementById("connectButton").innerText = "Requesting port...";
         const microbit = await navigator.serial.requestPort();
+        document.getElementById("connectButton").innerText = "Awaiting connection...";
         await microbit.open({ baudRate: 115200 });
         writer = microbit.writable.getWriter();
         connectedUSB = true;
@@ -445,11 +465,12 @@ document.getElementById("connectButton").addEventListener("click", async () => {
         document.getElementById("connectButton").innerText = "Connected";
     } catch (error) {
         console.error("❌ Error connecting to Micro:bit:", error);
+        document.getElementById("connectButton").innerText = "Error!";
     }
 });
 
 /*
-// Pair with Bluetooth
+// Pair with Bluetooth - testet ting med denne, tar vare på for referanse
 document.getElementById("pairingButton").addEventListener("click", async () => {
     try {
         console.log('Requesting Bluetooth device...');
@@ -466,7 +487,25 @@ document.getElementById("pairingButton").addEventListener("click", async () => {
 
 
 
-//connect over BT VIRKET I STED; ARGH! Noe med hvordan microbitten pares i nettleseren. Tester på andre maskiner.
+/*connect over BT VIRKER! 
+... For meg, hjemme i alle fall. Ikke på jobb i dag med 80+ BT-enheter som forsøplet luftveiene, men det kan ha vært andre faktorer.
+! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
+! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
+! Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting,
+  og prøver du å koble til mens windows er paret til micro:biten, smelter Chrome. Eller micro:bitten flimrer og gir 020 OUT OF MEMORY.
+   Ting jeg gjør som får ting til å til slutt virke (da micro:bit sto i PC med USB, og i strømkabel uten data)
+    1) Steng nettleser, trekk ut ledning fra mb
+    2) Åpne facerace.html, plugg i og sett mb i paringmodus
+    3) Par mb i windows, men ha "Bluetooth & other devices" åpen
+    4) Forsøk å pare mb i pairing-modus i nettleseren. Den skal dukke opp som BBC micro:bit [xxxxx]
+    5) Reset mb. Se om den dukker opp som BBC micro:bit
+    6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
+    7) Forsøk å pare med "BBC micro:bit" i nettleseren.
+    8) Reset og prøv igjen til det funker?
+
+micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. Kitronik MOVE er ukompatibel.
+
+*/
 document.getElementById("connectButtonBT").addEventListener("click", async () => {
     try {
         console.log("Requesting micro:bit Bluetooth device...");
@@ -477,11 +516,14 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
         });
         
         console.log("Connecting to GATT Server...");
+        document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
         microbitServer = await microbitDevice.gatt.connect();
+        document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
         microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
         
         console.log("Finding TX Characteristic...");
-        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic
+        document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
         
         console.log("Connected to micro:bit via Bluetooth");
         connectedBT = true;
@@ -489,6 +531,7 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
         document.getElementById("connectButtonBT").innerText = "Connected";
     } catch (error) {
         console.error("Bluetooth connection failed", error);
+        document.getElementById("connectButtonBT").innerText = "Error!";
     }
 });
 
@@ -534,7 +577,7 @@ async function sendDataToMicrobitUSB(signal) {
 }
 
 /*
-// copypaste fra test-eksempel
+// copypaste fra test-eksempel, tar vare på for referanse
 document.getElementById('sendButton').addEventListener('click', async () => {
     if (!microbitCharacteristic) {
         alert("Not connected to micro:bit");
