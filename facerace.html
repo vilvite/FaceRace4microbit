@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>Face Race Interface v1.4</title>
+    <title>Face Race Interface v1.5</title>
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -46,12 +46,12 @@ body::before {
 }
 
 #left {
-    flex: 1; /* Takes equal width */
+    flex: 2;  /* Takes more space */
     text-align: left;
 }
 
 #center {
-    flex: 2; /* Takes more space */
+    flex: 1; /* Takes equal width */
     text-align: center;
 }
 
@@ -60,13 +60,14 @@ body::before {
     text-align: left;
 }
 
-/* Webcam Styling */
-video {
-    width: 100%;
-    max-width: 320px;
-    height: auto;
-    border: 1px solid black;
-}
+/* Webcam Styling square*/
+ #webcam {
+    width: 224px;
+    height: 224px;
+    object-fit: cover; /* Ensures square cropping */
+    transform: scaleX(-1); /* Start mirrored */
+  }
+
 
 /* Drag & Drop Zone */
 #dropZone {
@@ -165,21 +166,22 @@ textarea {
 
 <div id="container">
     <div id="left">
+        
+        <!-- Proper squared?-->
         <h1>Camera Selector</h1>
         <label for="cameraSelect">Select Camera:</label>
         <select id="cameraSelect"></select>
         <button onclick="refreshCameraList()">🔄 Refresh List</button>
+        
         <h2>Available Cameras:</h2>
         <pre id="deviceList">Loading...</pre>
-        <video id="webcam" autoplay playsinline></video>
-    </div>
-
-    <div id="center">
-        <h1>TensorFlow.js Webcam Classifier</h1>
-        <div id="dropZone">Drag & Drop Model ZIP Here</div>
-        <input type="file" id="fileInput" style="display:none;" accept=".zip">
         
-
+        <!-- 🎥 Video feed (Now forced to be 224x224) -->
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="mirrorCanvas" hidden></canvas>
+        <br>
+        <button onclick="toggleMirror()">🔄 Mirror Video</button> <!-- Mirror Button -->
+        <br>
         <div id="predictions">
             <h2>Predictions:</h2>
             <ul id="predictionList"></ul>
@@ -189,70 +191,32 @@ textarea {
             <input type="range" id="threshold" min="0" max="100" value="50">
             <span id="thresholdValue">50</span>%
         </div>
+                     
     </div>
+
+    <!-- <div id="center">
+             
+        
+
+        
+    </div> -->
 
     <div id="right">
         <div id="instructionsTitle"><h1>Instructions:</h1></div>
         <button onclick="switchLanguage('en')">🇬🇧 English</button>
         <button onclick="switchLanguage('no')">🇳🇴 Norsk</button>
         <div id="instructionsText1"><i>Lorem Ipsum og andre ripsbærbusker</i></div>
+        <br>
         <div id="instructionsText2"><i></i></div>
+        <div style="text-align: center;">
+        <div id="dropZone">Drag & Drop Model ZIP Here</div></div style>
+        <input type="file" id="fileInput" style="display:none;" accept=".zip">
         <div id="instructionsText3"><i></i></div>
         <button id="connectButton">Connect to Micro:bit USB serial</button>
-        <!-- <button id="pairingButton">Pair Bluetooth</button> -->
+        <!-- <button id="pairingButton">Pair Bluetooth</button> for testing-->
         <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
-        
-        
-        
+        <br>
         <div id="instructionsText4"><i></i></div>
-        <!--
-        <button id="copyPasteButton"onclick="openPopup()">📋 Copy & Paste Eksempelkode, trengte ikke denne lenger men tar vare på for referanse</button>
-         Popup Window 
-        <div id="popup" class="popup">
-        <div class="popup-content">
-        <span class="close" onclick="closePopup()">&times;</span>
-        <h2>micro:bit JavaScript Demo</h2>
-        
-                
-        <textarea id="popupText" readonly>
-        
-            bluetooth.onBluetoothConnected(function () {
-                basic.showLeds(`
-                    . . # # .
-                    # . # . #
-                    . # # # .
-                    # . # . #
-                    . . # # .
-                    `)
-            })
-            bluetooth.onBluetoothDisconnected(function () {
-                basic.showIcon(IconNames.Sad)
-            })
-            bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-                receivedText = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
-                basic.showString(receivedText)
-            })
-            serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-                SerialData = serial.readUntil(serial.delimiters(Delimiters.NewLine))
-                basic.showString(SerialData)
-            })
-            let SerialData = ""
-            let receivedText = ""
-            serial.redirectToUSB()
-            bluetooth.startUartService()
-            basic.showLeds(`
-                . . . . .
-                . # . # .
-                . . . . .
-                # # # # #
-                . # # # .
-                `)
-            
-        </textarea>
-        <button onclick="copyText()">Copy to Clipboard</button>
-        </div>
-        </div>
-        -->
         <br>
         <div id="instructionsText5"><i></i></div>
         <br>
@@ -263,7 +227,7 @@ textarea {
     </div>
 </div>
 
-<h3>v1.4 - 20.03.25</h3>
+<h3>v1.5 - 23.03.25</h3>
 
 <!-- TensorFlow.js & JSZip -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
@@ -278,6 +242,7 @@ textarea {
 
 <script>
 let model, webcamElement, classNames, writer, connectedUSB = false, connectedBT = false, lastClassSent = null; currentStream = null;
+let isMirrored = true; // Track mirroring stat
 
 //BT stuff here
 let microbitDevice;
@@ -287,44 +252,45 @@ let microbitCharacteristic;
 
 
 
-// Load Model from ZIP
+// Load Model from ZIP - fixed to tf.io.browserFiles
 async function handleZipUpload(file) {
     const zip = new JSZip();
     const zipData = await zip.loadAsync(file);
 
-    // Extract model files
-    const modelJSON = await zipData.file("model.json").async("string");
-    const metadataJSON = await zipData.file("metadata.json").async("string");
-    const weightsData = await zipData.file("weights.bin").async("arraybuffer");
+    const modelJSONFile = zipData.file("model.json");
+    const metadataJSONFile = zipData.file("metadata.json");
+    const weightsFile = zipData.file("weights.bin");
+
+    if (!modelJSONFile || !metadataJSONFile || !weightsFile) {
+        console.error("❌ Model files missing in ZIP!");
+        return;
+    }
+
+    const modelJSON = await modelJSONFile.async("string");
+    const metadataJSON = await metadataJSONFile.async("string");
+    const weightsData = await weightsFile.async("arraybuffer");
 
     // Parse metadata
     const metadata = JSON.parse(metadataJSON);
     classNames = metadata.labels;
     console.log("✅ Class names loaded:", classNames);
 
-    // Convert JSON to Blob URL
+    // Convert to Blob and use browserFiles directly
     const modelBlob = new Blob([modelJSON], { type: "application/json" });
-    const modelURL = URL.createObjectURL(modelBlob);
-
-    // Convert weights to an ArrayBuffer and wrap in a FileReader
     const weightsBlob = new Blob([weightsData], { type: "application/octet-stream" });
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(weightsBlob);
 
-    reader.onload = async function () {
-        const weightsBuffer = reader.result;
-        const weightsFile = new File([weightsBuffer], "weights.bin", { type: "application/octet-stream" });
+    try {
+        model = await tf.loadLayersModel(tf.io.browserFiles([
+            new File([modelJSON], "model.json"),
+            new File([weightsData], "weights.bin")
+        ]));
 
-        // Load the model
-        try {
-            model = await tf.loadLayersModel(tf.io.browserFiles([new File([modelJSON], "model.json"), weightsFile]));
-            console.log("✅ Model loaded successfully!");
-        } catch (error) {
-            console.error("❌ Error loading model:", error);
-        }
-    };
+        console.log("✅ Model loaded successfully!");
+        console.log("🔍 Model expects input shape:", model.inputs[0].shape);
+    } catch (error) {
+        console.error("❌ Error loading model:", error);
+    }
 }
-
 
 
 // File Input for selecting ZIP file through a dialog
@@ -395,10 +361,11 @@ async function getCameras() {
                     option.textContent = device.label || `Camera ${index + 1}`;
                     select.appendChild(option);
 
-                    deviceInfo += `📷 ${device.label || "Unknown Camera"}\nID: ${device.deviceId}\n\n`;
+                    deviceInfo += `📷 ${device.label || "Unknown Camera"};\nID: ${device.deviceId}\n\n`;
                 });
 
                 document.getElementById("deviceList").textContent = deviceInfo;
+                
 
                 // Auto-select first camera
                 if (videoDevices.length > 0) {
@@ -431,13 +398,18 @@ async function getCameras() {
         // Listen for dropdown change
         document.getElementById("cameraSelect").addEventListener("change", (event) => {
             setupWebcam(event.target.value);
-        });
+});
 
-        // Refresh camera list
-        function refreshCameraList() {
-            getCameras();
-        }
+// Refresh camera list
+function refreshCameraList() {
+    getCameras();
+}
 
+function toggleMirror() {
+    isMirrored = !isMirrored;
+    const videoElement = document.getElementById("webcam");
+    videoElement.style.transform = isMirrored ? "scaleX(-1)" : "scaleX(1)"; // ✅ Flip preview
+}
 
 
 
@@ -488,7 +460,7 @@ document.getElementById("pairingButton").addEventListener("click", async () => {
 
 
 /*connect over BT VIRKER! 
-... For meg, hjemme i alle fall. Ikke på jobb i dag med 80+ BT-enheter som forsøplet luftveiene, men det kan ha vært andre faktorer.
+... Men det er en liten rodeo å koble til hvis det er mye trafikk i luften.
 ! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
 ! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
 ! Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting,
@@ -501,9 +473,13 @@ document.getElementById("pairingButton").addEventListener("click", async () => {
     5) Reset mb. Se om den dukker opp som BBC micro:bit
     6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
     7) Forsøk å pare med "BBC micro:bit" i nettleseren.
-    8) Reset og prøv igjen til det funker?
+    8) Reset og prøv igjen til det funker? micro:biten ser ut til å portene for å lytte etter kontakter, så om det er mange BT-enheter i nærheten som hilser på,
+       gir den 020 memory error etter noen få sekunder! Anbefaler å forsøke å pare enhetene en og en på rolige dager.
 
-micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. Kitronik MOVE er ukompatibel.
+micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass! 
+Kitronik MOVE er ukompatibel med Bluetooth.
+
+Anbefaler BT på Android (telefon, for å flexe) og USB på PC. Face Race var tenkt med USB-seriell til micro:bit som radio-kobler til en annen micro:bit i en BitBot.
 
 */
 document.getElementById("connectButtonBT").addEventListener("click", async () => {
@@ -609,9 +585,23 @@ function updateUI(prediction) {
     document.getElementById("thresholdValue").textContent = document.getElementById("threshold").value;
 }
 
-// Run Prediction
+// Run Prediction  - now fixed?
 async function predict() {
-    const videoElement = document.getElementById("webcam"); // ✅ Get the actual <video> element
+    const videoElement = document.getElementById("webcam");
+    const canvas = document.getElementById("mirrorCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Ensure correct canvas size (224x224 required by model)
+    canvas.width = 224;
+    canvas.height = 224;
+
+
+    ctx.save();
+    if (isMirrored) {
+    ctx.scale(-1, 1); // Flip horizontally
+    ctx.translate(-canvas.width, 0);
+    }
+
 
     if (!model || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
         console.warn("⚠️ Waiting for webcam...");
@@ -619,43 +609,63 @@ async function predict() {
         return;
     }
 
+    // Crop and Center the Video Feed
+    const cropX = Math.max((videoElement.videoWidth - 224) / 2, 0);
+    const cropY = Math.max((videoElement.videoHeight - 224) / 2, 0);
+    
+    ctx.drawImage(videoElement, cropX, cropY, 224, 224, 0, 0, 224, 224);
+
+    ctx.restore();
+
+
+
     console.log("🔍 Running prediction...");
 
-    tf.tidy(() => {
-        const videoTensor = tf.browser.fromPixels(videoElement) // ✅ Pass the correct video element
-            .resizeNearestNeighbor([224, 224])
-            .expandDims()
-            .toFloat()
-            .div(255);
+    try {
+        const predictionData = tf.tidy(() => {
+            // Convert canvas to tensor
+            const imageTensor = tf.browser.fromPixels(canvas)
+                .toFloat()
+                .div(tf.scalar(255)) // Normalize colors
+                .expandDims(); // Add batch dimension
 
-        const prediction = model.predict(videoTensor).dataSync();
-        updateUI(Array.from(prediction));
+            // Make a prediction
+            return model.predict(imageTensor).dataSync();
+        });
 
+        if (!predictionData || predictionData.length === 0) {
+            console.error("⚠️ Model returned empty prediction");
+            return;
+        }
+
+        updateUI(Array.from(predictionData));
+
+        // Process prediction results
         const threshold = document.getElementById("threshold").value / 100;
-        const maxIndex = prediction.indexOf(Math.max(...prediction));
-        const maxConfidence = prediction[maxIndex];
+        const maxIndex = predictionData.indexOf(Math.max(...predictionData));
+        const maxConfidence = predictionData[maxIndex];
 
-        if (connectedUSB && maxConfidence >= threshold) {
+        if (maxConfidence >= threshold) {
             const className = classNames[maxIndex];
+
             if (className !== lastClassSent) {
                 lastClassSent = className;
-                sendDataToMicrobitUSB(`${className}\n`);
+
+                if (connectedUSB) sendDataToMicrobitUSB(`${className}\n`);
+                if (connectedBT) sendDataToMicrobitBT(`${className}\n`);
             }
         }
-        if (connectedBT && maxConfidence >= threshold) {
-            const className = classNames[maxIndex];
-            if (className !== lastClassSent) {
-                lastClassSent = className;
-                sendDataToMicrobitBT(`${className}\n`);
-            }
-        }
-
-
-    });
+    } catch (error) {
+        console.error("❌ Prediction Error:", error);
+    }
 
     await new Promise(resolve => setTimeout(resolve, 50));
     requestAnimationFrame(predict);
 }
+
+
+
+
 
 // Oversettelsesbit 
 
@@ -665,19 +675,19 @@ const translations = {
         cameraSelector: "Camera Selector",
         selectCamera: "Select Camera:",
         refreshList: "🔄 Refresh List",
+        toggleMirror: "🔄 Mirror Video",
         availableCameras: "Available Cameras:",
         predictions: "Predictions:",
         thresholdLabel: "Threshold (Confidence):",
         connectButton: "Connect with USB Serial",
         connectButtonBT: "Connect with Bluetooth",
-      //  copypasteButton: "📋 Copy & Paste example code",
         dropZone: "Drag & Drop Model ZIP Here",
         instructionsTitle: "Instructions:",
         instructionsText1: "1) Create a model with teachablemachine.withgoogle.com and download as .zip. ",
-        instructionsText2: "2) Drag&Drop onto the zone in the middle to load, then",
+        instructionsText2: "2) Drag&Drop the .zip onto the next field, or click and select the file.",
         instructionsText3: "3) press Connect to micro:bit and select your unit. Must be using Chrome or Edge!",
         instructionsText4: "Your micro:bit should now receive the Class names over USB or Bluetooth! Adjust the Confidence Threshold to suit your needs.",
-        instructionsText5: "If something breaks, press F12 and check the console for errors.",
+        instructionsText5: "If something breaks, press F12 and check the console for errors. Predictions does not match training data at the moment.",
         instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
     },
     no: {
@@ -685,22 +695,22 @@ const translations = {
         cameraSelector: "Kameravelger",
         selectCamera: "Velg Kamera:",
         refreshList: "🔄 Oppdater Liste",
+        toggleMirror: "🔄 Speilvend Video",
         availableCameras: "Tilgjengelige Kameraer:",
         predictions: "Prediksjoner:",
         thresholdLabel: "Terskel (Sikkerhet):",
         connectButton: "Koble til med USB Serial",
         connectButtonBT: "Koble til med Bluetooth",
-       // copypasteButton: "📋 Copy & Paste eksempelkode",
         dropZone: "Dra og slipp ZIP-fil av modell her",
         instructionsTitle: "Instruksjoner:",
         instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
-        instructionsText2: "2) Dra og slipp filen inn på feltet i midten for å laste inn modellen.",
+        instructionsText2: "2) Dra og slipp filen inn på feltet under, eller klikk på feltet og velg filen, for å laste inn modellen.",
         instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp (NB! Bruk Chrome eller Edge).",
         instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over USB eller Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
-        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg.",
+        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg. NB! Noe ser ut til å være feil med hvordan modellen leser bilder for øyeblikket, stemmer ikke med slik det ser ut i treningsverktøyet.",
         instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
     }
-};
+};        
 
 function switchLanguage(lang) {
     document.querySelector("h1").innerText = translations[lang].title;
@@ -708,12 +718,12 @@ function switchLanguage(lang) {
     document.querySelector("#left h1").innerText = translations[lang].cameraSelector;
     document.querySelector("label[for='cameraSelect']").innerText = translations[lang].selectCamera;
     document.querySelector("button[onclick='refreshCameraList()']").innerText = translations[lang].refreshList;
+    document.querySelector("button[onclick='toggleMirror()']").innerText = translations[lang].toggleMirror;
     document.querySelector("#deviceList").innerText = translations[lang].availableCameras;
     document.querySelector("#predictions h2").innerText = translations[lang].predictions;
     document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;
     document.querySelector("#connectButton").innerText = translations[lang].connectButton;
     document.querySelector("#connectButtonBT").innerText = translations[lang].connectButtonBT;
-  //  document.querySelector("#copyPasteButton").innerText = translations[lang].copypasteButton;
     document.querySelector("#dropZone").innerText = translations[lang].dropZone;
 
     // Update instructions
