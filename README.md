@@ -24,7 +24,7 @@ Blåtann-kontakt virker! Det er en del ting å være obs på, dog:
     5) Reset mb. Se om den dukker opp som BBC micro:bit
     6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
     7) Forsøk å pare med "BBC micro:bit" i nettleseren.
-    8) Reset og prøv igjen til det funker?
+    8) Reset og prøv igjen til det funker? micro:biten ser ut til å portene for å lytte etter kontakter, så om det er mange BT-enheter i nærheten som hilser på, gir den 020 memory error etter noen få sekunder! Anbefaler å forsøke å pare enhetene en og en på rolige dager.
 
 micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass!
 
