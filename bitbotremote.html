@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#12d633" />
+    <title>BitBotRemote V0.1</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 10px; /* Adjust for exact placement */
+    right: 10px;
+    width: 91px; /* Adjust the size */
+    height: 96px;
+    background-image: url('images/VILVITE_logo_centered2.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.6;
+    z-index: -1; /* Push it behind all content */
+    
+}
+
+#container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    height: 90%;
+}
+
+/* Zones */
+#left, #right, #center {
+    padding: 20px;
+}
+
+#left {
+    flex: 2;  /* Takes more space */
+    text-align: left;
+}
+
+#center {
+    flex: 1; /* Takes equal width */
+    text-align: center;
+}
+
+#right {
+    flex: 1;
+    text-align: left;
+}
+
+
+
+/* Gradient Background */
+body::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 200px; /* Adjust as needed */
+    background: linear-gradient(to top, #12d633, white);
+    z-index: -1;
+}
+
+#right button {
+    
+    font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+
+    display: block;
+    width: 150px;
+    margin: 5px auto;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+}
+
+#right button:hover {
+    background-color: #ddd;
+}
+
+
+/* Joystick Container */
+.joystick-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            background: #ddd;
+            border-radius: 50%;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            user-select: none;
+        }
+
+        /* Movable Joystick */
+        .joystick {
+            width: 50px;
+            height: 50px;
+            background: #12d633;
+            border-radius: 50%;
+            position: absolute;
+            transition: 0.05s ease-out;
+        }
+
+        /* Display Values */
+        #joystickValues {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+
+
+    </style>
+</head>
+<body>
+
+<h1>BitBotRemote!</h1>
+<!--<div class="fixed-image"></div>-->
+
+
+<div id="container">
+    
+                     
+    
+
+    <div id="left">
+
+        <!-- Joystick -->
+        <div class="joystick-container" id="joystickContainer">
+            <div class="joystick" id="joystick"></div>
+        </div>
+
+        <!-- X and Y Display -->
+        <div id="joystickValues">X: 0, Y: 0</div>
+
+    </div>
+    <div id="center">
+        
+    </div>
+
+
+    <div id="right">
+        
+        
+        <!-- <button id="pairingButton">Pair Bluetooth</button> for testing-->
+        <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
+        <br>
+                
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_08sctr4dk0pf','_blank')">Demo code Bluetooth</button>
+        
+    </div>
+</div>
+
+
+<script>
+
+//Joystick stuff here
+const joystick = document.getElementById("joystick");
+const container = document.getElementById("joystickContainer");
+const displayValues = document.getElementById("joystickValues");
+
+let joystickX = 0;
+let joystickY = 0;
+
+let containerRect = container.getBoundingClientRect();
+let centerX = containerRect.width / 2;
+let centerY = containerRect.height / 2;
+
+function updateJoystickPosition(clientX, clientY) {
+    let offsetX = clientX - containerRect.left - centerX;
+    let offsetY = clientY - containerRect.top - centerY;
+
+    let distance = Math.sqrt(offsetX ** 2 + offsetY ** 2);
+    let maxDistance = containerRect.width / 2 - 10;
+
+    if (distance > maxDistance) {
+        let angle = Math.atan2(offsetY, offsetX);
+        offsetX = Math.cos(angle) * maxDistance;
+        offsetY = Math.sin(angle) * maxDistance;
+    }
+
+    joystick.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+    joystickX = Math.round((offsetX / maxDistance) * 100);
+    joystickY = Math.round((offsetY / maxDistance) * 100);
+
+    displayValues.innerText = `X: ${joystickX}, Y: ${(joystickY) * -1}`; // * -1 because the enemy gate is up
+}
+
+function resetJoystick() {
+    joystick.style.transform = "translate(0, 0)";
+    joystickX = 0;
+    joystickY = 0;
+    displayValues.innerText = "X: 0, Y: 0";
+}
+
+
+joystick.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    function moveJoystick(event) {
+        updateJoystickPosition(event.clientX, event.clientY);
+    }
+
+    function stopJoystick() {
+        document.removeEventListener("mousemove", moveJoystick);
+        document.removeEventListener("mouseup", stopJoystick);
+        resetJoystick();
+    }
+
+    document.addEventListener("mousemove", moveJoystick);
+    document.addEventListener("mouseup", stopJoystick);
+});
+
+joystick.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    function moveJoystick(event) {
+        let touch = event.touches[0];
+        updateJoystickPosition(touch.clientX, touch.clientY);
+    }
+
+    function stopJoystick() {
+        document.removeEventListener("touchmove", moveJoystick);
+        document.removeEventListener("touchend", stopJoystick);
+        resetJoystick();
+    }
+
+    document.addEventListener("touchmove", moveJoystick);
+    document.addEventListener("touchend", stopJoystick);
+});
+
+
+// Stuff for steering here
+
+// Logs joystick values every 50ms
+function logJoystickValues() {
+    
+    if ((joystickX + joystickX) == 0) {
+        console.error("🥽 Chilling");
+        return;
+    }
+    {
+        console.log(`Joystick X: ${joystickX}, Y: ${(joystickY) * -1}`);
+        sendDataToMicrobitBT(`${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
+    }
+    
+
+
+
+    
+    
+}
+
+// Start the interval for logging
+setInterval(logJoystickValues, 200);
+
+
+
+
+
+
+
+
+
+
+
+//BT stuff here
+let connectedBT = false; 
+let microbitDevice;
+let microbitServer;
+let microbitService;
+let microbitCharacteristic;
+
+
+
+
+// Convert non-ASCII characters - skandinaviske tegn funker ikke på serieport
+function convertToASCIICompatible(str) {
+    const replacements = {
+        'Æ': 'AE', 'Ø': 'OE', 'Å': 'AA',
+        'æ': 'ae', 'ø': 'oe', 'å': 'aa',
+    };
+    return str.split('').map(char => replacements[char] || char).join('');
+}
+
+/*
+// Connect to Micro:bit over serial
+document.getElementById("connectButton").addEventListener("click", async () => {
+    try {
+        document.getElementById("connectButton").innerText = "Requesting port...";
+        const microbit = await navigator.serial.requestPort();
+        document.getElementById("connectButton").innerText = "Awaiting connection...";
+        await microbit.open({ baudRate: 115200 });
+        writer = microbit.writable.getWriter();
+        connectedUSB = true;
+        console.log("✅ Connected to Micro:bit!");
+        document.getElementById('connectButtonBT').disabled = true;
+        document.getElementById("connectButton").innerText = "Connected";
+    } catch (error) {
+        console.error("❌ Error connecting to Micro:bit:", error);
+        document.getElementById("connectButton").innerText = "Error!";
+    }
+});
+
+/*
+// Pair with Bluetooth - testet ting med denne, tar vare på for referanse
+document.getElementById("pairingButton").addEventListener("click", async () => {
+    try {
+        console.log('Requesting Bluetooth device...');
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true // Allow any Bluetooth device, no filters
+        });
+        console.log('Paired with device:', device.name || 'Unknown device');
+    } catch (error) {
+        console.error('Bluetooth pairing failed:', error);
+    }
+});
+
+*/
+
+
+
+/*connect over BT VIRKER! 
+... Men det er en liten rodeo å koble til hvis det er mye trafikk i luften.
+! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
+! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
+! Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting,
+  og prøver du å koble til mens windows er paret til micro:biten, smelter Chrome. Eller micro:bitten flimrer og gir 020 OUT OF MEMORY.
+   Ting jeg gjør som får ting til å til slutt virke (da micro:bit sto i PC med USB, og i strømkabel uten data)
+    1) Steng nettleser, trekk ut ledning fra mb
+    2) Åpne facerace.html, plugg i og sett mb i paringmodus
+    3) Par mb i windows, men ha "Bluetooth & other devices" åpen
+    4) Forsøk å pare mb i pairing-modus i nettleseren. Den skal dukke opp som BBC micro:bit [xxxxx]
+    5) Reset mb. Se om den dukker opp som BBC micro:bit
+    6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
+    7) Forsøk å pare med "BBC micro:bit" i nettleseren.
+    8) Reset og prøv igjen til det funker? micro:biten ser ut til å portene for å lytte etter kontakter, så om det er mange BT-enheter i nærheten som hilser på,
+       gir den 020 memory error etter noen få sekunder! Anbefaler å forsøke å pare enhetene en og en på rolige dager.
+
+micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass! 
+Kitronik MOVE er ukompatibel med Bluetooth.
+
+Anbefaler BT på Android (telefon, for å flexe) og USB på PC. Face Race var tenkt med USB-seriell til micro:bit som radio-kobler til en annen micro:bit i en BitBot.
+
+*/
+document.getElementById("connectButtonBT").addEventListener("click", async () => {
+    try {
+        console.log("Requesting micro:bit Bluetooth device...");
+        microbitDevice = await navigator.bluetooth.requestDevice({
+           // acceptAllDevices: true // Allow any Bluetooth device, no filters
+            filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
+            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
+        });
+        
+        console.log("Connecting to GATT Server...");
+        document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
+        microbitServer = await microbitDevice.gatt.connect();
+        document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
+        microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        
+        console.log("Finding TX Characteristic...");
+        document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
+        
+        console.log("Connected to micro:bit via Bluetooth");
+        connectedBT = true;
+        
+        document.getElementById("connectButtonBT").innerText = "Connected";
+    } catch (error) {
+        console.error("Bluetooth connection failed", error);
+        document.getElementById("connectButtonBT").innerText = "Error!";
+    }
+});
+
+
+//more fancy sendDataToMicroBit(BT)
+async function sendDataToMicrobitBT(signal) {
+    if (!microbitCharacteristic) {
+        console.error("❌ No BT connection thingy available to send data");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await microbitCharacteristic.writeValue(byte);
+        }
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+    
+
+
+
+
+// Send data over serial 
+async function sendDataToMicrobitUSB(signal) {
+    if (!writer) {
+        console.error("❌ No writer available to send data.");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await writer.write(byte);
+        }
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+
+/*
+// copypaste fra test-eksempel, tar vare på for referanse
+document.getElementById('sendButton').addEventListener('click', async () => {
+    if (!microbitCharacteristic) {
+        alert("Not connected to micro:bit");
+        return;
+    }
+    const message = "HELLO\n"; // Ensure newline is included
+    try {
+        console.log("Sending:", message);
+        await microbitCharacteristic.writeValue(new TextEncoder().encode(message));
+        console.log("Message sent: HELLO");
+    } catch (error) {
+        console.error("Failed to send message", error);
+    }
+});
+
+*/
+
+
+
+// Start Everything
+async function init() {
+    
+    
+}
+init();
+
+
+
+</script>
+</body>
+</html>
