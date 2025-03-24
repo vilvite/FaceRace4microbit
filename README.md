@@ -6,10 +6,16 @@ https://vilvite.github.io/FaceRace4microbit/facerace.html
 
 Testing log in Norwegian for my colleagues:
 
-/*connect over BT VIRKER! 
-! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
-! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
-! Paring i Windows er på finspråket a hot mess! Ting går fort gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting.
+V 1.5 - 23.3.25
+Video kan speiles, men etter å ha testet med stillbilder vha OBS Virtual Cam ser jeg at modellen ikke tolkes på samme måte som ved trening på teachablemachine. Kan ikke se hva som kan være feil, må undersøke tensorflow-APIet mer (ChatGPT har hjulpet godt men virker tom for ideer).
+
+V 1.4 - 20.3.25
+Blåtann-kontakt virker! Det er en del ting å være obs på, dog:
+
+ - iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
+ - Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV] 
+ - Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting, og prøver du å koble til mens windows er paret til micro:biten, smelter Chrome. Eller micro:bitten flimrer og gir 020 OUT OF MEMORY.
+
    Ting jeg gjør som får ting til å til slutt virke (micro:bit står i PC med USB)
     1) Steng nettleser, trekk ut ledning fra mb
     2) Åpne facerace.html, plugg i og sett mb i paringmodus
@@ -20,6 +26,9 @@ Testing log in Norwegian for my colleagues:
     7) Forsøk å pare med "BBC micro:bit" i nettleseren.
     8) Reset og prøv igjen til det funker?
 
-micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. Kitronik MOVE er ukompatibel.
-Skal teste med V2.0 og se hvilke extensions som er kompatible. Krysser fingrene!
-*/
+micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass!
+
+Kitronik MOVE er ukompatibel med Bluetooth.
+
+Anbefaler BT på Android (telefon, for å flexe) og USB på PC. Face Race var tenkt med USB-seriell til micro:bit som radio-kobler til en annen micro:bit i en BitBot.
+
