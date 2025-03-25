@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V0.1</title>
+    <title>BitBotRemote V0.2</title>
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -88,6 +88,24 @@ body::after {
     border-radius: 5px;
 }
 
+#left button {
+    
+    font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+
+    display: block;
+    width: 100px;
+    margin: 5px auto;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border:  none;
+    border-radius: 5px;
+}
+#left button:hover {
+    background-color: #ddd;
+}
+
+
 #right button:hover {
     background-color: #ddd;
 }
@@ -96,8 +114,8 @@ body::after {
 /* Joystick Container */
 .joystick-container {
             position: relative;
-            width: 120px;
-            height: 120px;
+            width: 220px;
+            height: 220px;
             background: #ddd;
             border-radius: 50%;
             border: 2px solid #333;
@@ -110,8 +128,8 @@ body::after {
 
         /* Movable Joystick */
         .joystick {
-            width: 50px;
-            height: 50px;
+            width: 80px;
+            height: 80px;
             background: #12d633;
             border-radius: 50%;
             position: absolute;
@@ -123,6 +141,30 @@ body::after {
             margin-top: 20px;
             font-size: 18px;
             font-weight: bold;
+        }
+
+        /*Fancy color stuff */
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .color-wheel-container { position: relative; display: inline-block; }
+        .crosshair {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #color-display {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+            padding: 10px;
+            border: 2px solid black;
+            border-radius: 5px;
+            background-color: #f0f0f0;
         }
 
 
@@ -137,34 +179,47 @@ body::after {
 
 <div id="container">
     
-                     
+            
     
 
     <div id="left">
 
         <!-- Joystick -->
+        <button id="honkButton"onclick="honk()">📯</button>   
         <div class="joystick-container" id="joystickContainer">
             <div class="joystick" id="joystick"></div>
         </div>
 
         <!-- X and Y Display -->
         <div id="joystickValues">X: 0, Y: 0</div>
-
-    </div>
-    <div id="center">
+        
+        <button id="stopButton"onclick="emergencySTOP()">🛑</button>
         
     </div>
-
+    <div id="center">
+        <div class="color-wheel-container">
+            <canvas id="color-wheel" width="200" height="200"></canvas>
+            <div id="crosshair" class="crosshair"></div>
+        </div>
+        <br>
+        <div id="color-display" onclick="logColor()">#FFFFFF</div> 
+        <br>
+        <br>
+        <button id="unicornMode" onclick="unicornPower()">✨🦄✨</button> 
+    </div>
 
     <div id="right">
+        
         
         
         <!-- <button id="pairingButton">Pair Bluetooth</button> for testing-->
         <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
         <br>
-                
-        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_08sctr4dk0pf','_blank')">Demo code Bluetooth</button>
-        
+        <!--<button id="connectButton">Connect to Micro:bit USB serial</button>-->
+        <br>        
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_VV2C65bfT621','_blank')">Demo code Bluetooth</button>
+        <br>        
+        <!--<button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_08sctr4dk0pf','_blank')">Demo code USB</button>-->
     </div>
 </div>
 
@@ -257,15 +312,124 @@ function logJoystickValues() {
     }
     {
         console.log(`Joystick X: ${joystickX}, Y: ${(joystickY) * -1}`);
-        sendDataToMicrobitBT(`${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
+        if (connectedUSB) sendDataToMicrobitUSB(`@,${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
+        if (connectedBT) sendDataToMicrobitBT(`@,${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
     }
     
-
-
-
-    
-    
 }
+
+
+function emergencySTOP() {
+            if (connectedBT) sendDataToMicrobitBT(`STOP\n`); 
+            if (connectedUSB) sendDataToMicrobitUSB(`STOP\n`); 
+        }
+
+        function honk() {
+            if (connectedBT) sendDataToMicrobitBT(`HONK\n`); 
+            if (connectedUSB) sendDataToMicrobitUSB(`HONK\n`); 
+        }
+
+
+
+
+
+// Fancy RGB stuff here
+
+const canvas = document.getElementById('color-wheel');
+        const ctx = canvas.getContext('2d');
+        const crosshair = document.getElementById('crosshair');
+        const colorDisplay = document.getElementById('color-display');
+        let lastColor = "#FFFFFF";
+        let rgbConvert = "{ r: 0, g: 0, b: 0 }";
+
+        function drawColorWheel() {
+            const radius = canvas.width / 2;
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const dx = x - radius;
+                    const dy = y - radius;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > radius) continue;
+
+                    const angle = Math.atan2(dy, dx) + Math.PI;
+                    const hue = (angle / (2 * Math.PI)) * 360;
+                    const saturation = distance / radius;
+                    const [r, g, b] = hslToRgb(hue, saturation, 0.5);
+
+                    const index = (y * canvas.width + x) * 4;
+                    data[index] = r;
+                    data[index + 1] = g;
+                    data[index + 2] = b;
+                    data[index + 3] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function hslToRgb(h, s, l) {
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = l - c / 2;
+            let r = 0, g = 0, b = 0;
+
+            if (h < 60) { r = c; g = x; }
+            else if (h < 120) { r = x; g = c; }
+            else if (h < 180) { g = c; b = x; }
+            else if (h < 240) { g = x; b = c; }
+            else if (h < 300) { r = x; b = c; }
+            else { r = c; b = x; }
+
+            return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+        }
+
+        function getColorAtPosition(x, y) {
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            return `#${pixel[0].toString(16).padStart(2, '0')}${pixel[1].toString(16).padStart(2, '0')}${pixel[2].toString(16).padStart(2, '0')}`;
+        }
+        
+        function updateColor(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.touches ? event.touches[0].clientX - rect.left : event.offsetX;
+            const y = event.touches ? event.touches[0].clientY - rect.top : event.offsetY;
+            
+            lastColor = getColorAtPosition(x, y);
+            crosshair.style.left = `${x}px`;
+            crosshair.style.top = `${y}px`;
+            colorDisplay.textContent = lastColor;
+        }
+        
+        function logColor() {
+            rgbConvert = hexToRgb(lastColor); //convert hex to rgb
+            console.log('Selected Color:', rgbConvert);
+            if (connectedBT) sendDataToMicrobitBT(`${rgbConvert}\n`); //Last Color
+            if (connectedUSB) sendDataToMicrobitUSB(`${rgbConvert}\n`); //Last Color
+        }
+
+        function unicornPower() {
+            if (connectedBT) sendDataToMicrobitBT(`UNICORN\n`); //NEIGH
+            if (connectedUSB) sendDataToMicrobitUSB(`UNICORN\n`); //NEIGH
+        }
+
+
+
+        canvas.addEventListener('mousedown', () => canvas.addEventListener('mousemove', updateColor));
+        canvas.addEventListener('mouseup', () => canvas.removeEventListener('mousemove', updateColor));
+        canvas.addEventListener('touchstart', updateColor);
+        canvas.addEventListener('touchmove', updateColor);
+        canvas.addEventListener('touchend', (event) => event.preventDefault());
+        
+        drawColorWheel();   
+
+
+// Convert hexToRgb  https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+function hexToRgb(hex) {  
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `#RGB:${parseInt(result[1], 16)}:${parseInt(result[2], 16)}:${parseInt(result[3], 16)}` : null;
+}
+
 
 // Start the interval for logging
 setInterval(logJoystickValues, 200);
@@ -281,6 +445,7 @@ setInterval(logJoystickValues, 200);
 
 
 //BT stuff here
+let connectedUSB = false; 
 let connectedBT = false; 
 let microbitDevice;
 let microbitServer;
@@ -300,6 +465,7 @@ function convertToASCIICompatible(str) {
 }
 
 /*
+
 // Connect to Micro:bit over serial
 document.getElementById("connectButton").addEventListener("click", async () => {
     try {
@@ -452,7 +618,13 @@ document.getElementById('sendButton').addEventListener('click', async () => {
 
 // Start Everything
 async function init() {
-    
+    canvas.addEventListener('mousedown', () => canvas.addEventListener('mousemove', updateColor));
+        canvas.addEventListener('mouseup', () => canvas.removeEventListener('mousemove', updateColor));
+        canvas.addEventListener('touchstart', updateColor);
+        canvas.addEventListener('touchmove', updateColor);
+        canvas.addEventListener('touchend', (event) => event.preventDefault());
+        
+        drawColorWheel();
     
 }
 init();
