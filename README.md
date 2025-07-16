@@ -6,6 +6,9 @@ https://vilvite.github.io/FaceRace4microbit/facerace.html
 
 Testing log in Norwegian for my colleagues:
 
+V 2.0 - 16.7.25
+Har begynt å fikse problemene med at modellen leser helt feil. Viste seg at jeg dekodet bildene som rene Tensorflow-modeller i stedet for Teachable Machine-modeller. Usikker på hvilken metode som er lettest å fortsette med, håpet er å lage en modelltrener som kan kjøre på mobile enheter.
+
 V 1.5 - 23.3.25
 Video kan speiles, men etter å ha testet med stillbilder vha OBS Virtual Cam ser jeg at modellen ikke tolkes på samme måte som ved trening på teachablemachine. Kan ikke se hva som kan være feil, må undersøke tensorflow-APIet mer (ChatGPT har hjulpet godt men virker tom for ideer).
 
