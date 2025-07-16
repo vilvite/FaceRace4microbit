@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>Face Race Interface v1.5</title>
+    <title>KI Kart Interface v2.0</title>
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -227,10 +228,11 @@ textarea {
     </div>
 </div>
 
-<h3>v1.5 - 23.03.25</h3>
+<h3>v2.0 - 16.07.25</h3>
 
 <!-- TensorFlow.js & JSZip -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.0.0/dist/tf-converter.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
@@ -251,8 +253,7 @@ let microbitService;
 let microbitCharacteristic;
 
 
-
-// Load Model from ZIP - fixed to tf.io.browserFiles
+// Load Model from ZIP using tmImage.loadFromFiles
 async function handleZipUpload(file) {
     const zip = new JSZip();
     const zipData = await zip.loadAsync(file);
@@ -270,25 +271,17 @@ async function handleZipUpload(file) {
     const metadataJSON = await metadataJSONFile.async("string");
     const weightsData = await weightsFile.async("arraybuffer");
 
-    // Parse metadata
-    const metadata = JSON.parse(metadataJSON);
-    classNames = metadata.labels;
-    console.log("✅ Class names loaded:", classNames);
-
-    // Convert to Blob and use browserFiles directly
-    const modelBlob = new Blob([modelJSON], { type: "application/json" });
-    const weightsBlob = new Blob([weightsData], { type: "application/octet-stream" });
+    // Create File objects required by tmImage.loadFromFiles
+    const modelFile = new File([modelJSON], "model.json", { type: "application/json" });
+    const weightsFileObj = new File([weightsData], "weights.bin", { type: "application/octet-stream" });
+    const metadataFile = new File([metadataJSON], "metadata.json", { type: "application/json" });
 
     try {
-        model = await tf.loadLayersModel(tf.io.browserFiles([
-            new File([modelJSON], "model.json"),
-            new File([weightsData], "weights.bin")
-        ]));
-
-        console.log("✅ Model loaded successfully!");
-        console.log("🔍 Model expects input shape:", model.inputs[0].shape);
+        model = await tmImage.loadFromFiles(modelFile, weightsFileObj, metadataFile);
+        classNames = await model.getClassLabels();
+        console.log("✅ Model loaded successfully with classes:", classNames);
     } catch (error) {
-        console.error("❌ Error loading model:", error);
+        console.error("❌ Error loading tmImage model:", error);
     }
 }
 
@@ -576,32 +569,17 @@ document.getElementById('sendButton').addEventListener('click', async () => {
 function updateUI(prediction) {
     const predictionList = document.getElementById("predictionList");
     predictionList.innerHTML = "";
-    prediction.forEach((confidence, index) => {
-        const className = classNames[index] || `Class ${index}`;
+    prediction.forEach(({ className, probability }) => {
         const listItem = document.createElement("li");
-        listItem.textContent = `${className}: ${(confidence * 100).toFixed(2)}%`;
+        listItem.textContent = `${className}: ${(probability * 100).toFixed(2)}%`;
         predictionList.appendChild(listItem);
     });
     document.getElementById("thresholdValue").textContent = document.getElementById("threshold").value;
 }
 
-// Run Prediction  - now fixed?
+// Run Prediction
 async function predict() {
     const videoElement = document.getElementById("webcam");
-    const canvas = document.getElementById("mirrorCanvas");
-    const ctx = canvas.getContext("2d");
-
-    // Ensure correct canvas size (224x224 required by model)
-    canvas.width = 224;
-    canvas.height = 224;
-
-
-    ctx.save();
-    if (isMirrored) {
-    ctx.scale(-1, 1); // Flip horizontally
-    ctx.translate(-canvas.width, 0);
-    }
-
 
     if (!model || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
         console.warn("⚠️ Waiting for webcam...");
@@ -609,44 +587,25 @@ async function predict() {
         return;
     }
 
-    // Crop and Center the Video Feed
-    const cropX = Math.max((videoElement.videoWidth - 224) / 2, 0);
-    const cropY = Math.max((videoElement.videoHeight - 224) / 2, 0);
-    
-    ctx.drawImage(videoElement, cropX, cropY, 224, 224, 0, 0, 224, 224);
-
-    ctx.restore();
-
-
-
     console.log("🔍 Running prediction...");
 
     try {
-        const predictionData = tf.tidy(() => {
-            // Convert canvas to tensor
-            const imageTensor = tf.browser.fromPixels(canvas)
-                .toFloat()
-                .div(tf.scalar(255)) // Normalize colors
-                .expandDims(); // Add batch dimension
-
-            // Make a prediction
-            return model.predict(imageTensor).dataSync();
-        });
+        const maxPredictions = model.getTotalClasses();
+        const predictionData = await model.predictTopK(videoElement, maxPredictions, isMirrored);
 
         if (!predictionData || predictionData.length === 0) {
             console.error("⚠️ Model returned empty prediction");
             return;
         }
 
-        updateUI(Array.from(predictionData));
+        updateUI(predictionData);
 
         // Process prediction results
         const threshold = document.getElementById("threshold").value / 100;
-        const maxIndex = predictionData.indexOf(Math.max(...predictionData));
-        const maxConfidence = predictionData[maxIndex];
+        const topPrediction = predictionData[0];
 
-        if (maxConfidence >= threshold) {
-            const className = classNames[maxIndex];
+        if (topPrediction.probability >= threshold) {
+            const className = topPrediction.className;
 
             if (className !== lastClassSent) {
                 lastClassSent = className;
@@ -662,7 +621,6 @@ async function predict() {
     await new Promise(resolve => setTimeout(resolve, 50));
     requestAnimationFrame(predict);
 }
-
 
 
 
@@ -691,7 +649,7 @@ const translations = {
         instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
     },
     no: {
-        title: "Face Race med TensorFlow.js og micro:bit",
+        title: "KI Kart med TensorFlow.js og micro:bit",
         cameraSelector: "Kameravelger",
         selectCamera: "Velg Kamera:",
         refreshList: "🔄 Oppdater Liste",
