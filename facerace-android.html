@@ -1,0 +1,837 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#12d633" />
+    <title>Face Race Interface for Android</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 10px; /* Adjust for exact placement */
+    right: 10px;
+    width: 91px; /* Adjust the size */
+    height: 96px;
+    background-image: url('images/VILVITE_logo_centered2.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.6;
+    z-index: -1; /* Push it behind all content */
+    
+}
+
+#container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    height: 90%;
+}
+
+/* Zones */
+#left, #right {
+    padding: 20px;
+}
+
+#left {
+  
+    text-align: middle;
+}
+
+
+#right {
+  
+    text-align: left;
+}
+
+/* Webcam Styling square*/
+ #webcam {
+    width: 84%;
+    aspect-ratio: 1 / 1; 
+    object-fit: cover; /* Ensures square cropping */
+    transform: scaleX(-1); /* Start mirrored */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+  }
+
+
+/* Drag & Drop Zone */
+#dropZone {
+    border: 2px dashed #007bff;
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+#dropZone:hover {
+    background-color: #e2e6ea;
+}
+
+/* Gradient Background */
+body::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 200px; /* Adjust as needed */
+    background: linear-gradient(to top, #12d633, white);
+    z-index: -1;
+}
+
+#right button {
+    
+    font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+
+    display: block;
+    width: 150px;
+    margin: 5px auto;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+}
+
+#right button:hover {
+    background-color: #ddd;
+}
+
+#selectButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+#selectButtons button {
+  width: auto; /* Override the fixed width */
+  margin: 0;   /* Remove inherited auto-centering */
+}
+
+
+
+/* Popup styling */
+.popup {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    width: 50%;
+    min-width: 300px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* Textarea styling */
+textarea {
+    width: 100%;
+    height: 100px;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none;
+    font-size: 16px;
+}
+
+
+#emojiBurstContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 9999;
+}
+
+.emoji-burst {
+  position: absolute;
+  font-size: 2rem;
+  animation: burst 1s ease-out forwards;
+  user-select: none;
+}
+
+@keyframes burst {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) scale(1.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+
+    </style>
+</head>
+<body>
+
+<h1>Face Race testside tjollahoppsannsa! Hvis du leser dette har noe gått i stykker</h1>
+<!--<div class="fixed-image"></div>-->
+
+
+<div id="container">
+    <div id="left">
+        
+        <!-- Proper squared?-->
+        
+        <label for="cameraSelect">Select Camera:</label>
+        <select id="cameraSelect"></select>
+        <button onclick="refreshCameraList()">🔄 Refresh List</button>
+        <button onclick="toggleMirror()">🔄 Mirror Video</button> <!-- Mirror Button -->
+        <br>                
+        
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="mirrorCanvas" hidden></canvas>
+        <br>
+        
+   
+         <div id="predictions">
+            <h2>Predictions:</h2>
+            <ul id="predictionList"></ul>
+        </div>
+        
+        <div id="thresholdContainer">
+            <label for="threshold">Threshold (Confidence): </label>
+            <input type="range" id="threshold" min="0" max="100" value="50">
+            <span id="thresholdValue">50</span>%
+        </div>
+        <br>
+        
+
+
+        <div id="instructionsTitle"><h1>Instructions:</h1></div>
+        <div id="selectButtons">
+        <button onclick="switchLanguage('en')">🇬🇧 English</button>
+        <button onclick="switchLanguage('no')">🇳🇴 Norsk</button>
+        </div>
+        <div id="instructionsText1"><i>Lorem Ipsum og andre ripsbærbusker</i></div>
+        <br>
+        <div id="instructionsText2"><i></i></div>
+        <div style="text-align: center;">
+        <div id="dropZone">Drag & Drop Model ZIP Here</div></div style>
+        <input type="file" id="fileInput" style="display:none;" accept=".zip">
+
+        
+        <div id="instructionsText3"><i></i></div>
+        <div id="selectButtons">
+      
+        <!-- <button id="pairingButton">Pair Bluetooth</button> for testing-->
+        <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
+        </div>
+        <br>
+     
+        
+
+        <div id="instructionsText4"><i></i></div>
+        <br>
+        <div id="instructionsText5"><i></i></div>
+        <br>
+        <div id="instructionsText6"><i></i></div>
+        <div id="selectButtons">
+        
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_JeYeWD9KTfH5','_blank')">Demo code Bluetooth test</button>
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_XfgfA6P3oM5E','_blank')">Demo code Bit:Bot receiver</button>
+        </div>
+
+       <h3>v2.1A - 17.07.25</h3>
+      <br>
+<h2>Available Cameras:</h2>
+<pre id="deviceList">Loading...</pre>
+
+                     
+    </div>
+
+    <!-- <div id="center">
+             
+        
+
+        
+    </div> 
+
+    <div id="right">
+        
+
+        
+    </div>
+
+    -->
+
+
+</div>
+
+<br>
+<br>
+
+<div id="bottom">
+
+
+</div>
+
+<!-- TensorFlow.js & JSZip -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.0.0/dist/tf-converter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Kan og lastes ned og legges i /lib for offline-versjon
+<script src="/lib/tf.min.js"></script>
+<script src="/lib/tf-converter.min.js"></script>
+<script src="/lib/jszip.min.js"></script>
+-->
+
+<script>
+let model, webcamElement, classNames, writer, connectedUSB = false, connectedBT = false, lastClassSent = null; currentStream = null;
+let isMirrored = true; // Track mirroring stat
+
+//BT stuff here
+let microbitDevice;
+let microbitServer;
+let microbitService;
+let microbitCharacteristic;
+
+
+// Load Model from ZIP using tmImage.loadFromFiles
+async function handleZipUpload(file) {
+    const zip = new JSZip();
+    const zipData = await zip.loadAsync(file);
+
+    const modelJSONFile = zipData.file("model.json");
+    const metadataJSONFile = zipData.file("metadata.json");
+    const weightsFile = zipData.file("weights.bin");
+
+    if (!modelJSONFile || !metadataJSONFile || !weightsFile) {
+        console.error("❌ Model files missing in ZIP!");
+        return;
+    }
+
+    const modelJSON = await modelJSONFile.async("string");
+    const metadataJSON = await metadataJSONFile.async("string");
+    const weightsData = await weightsFile.async("arraybuffer");
+
+    // Create File objects required by tmImage.loadFromFiles
+    const modelFile = new File([modelJSON], "model.json", { type: "application/json" });
+    const weightsFileObj = new File([weightsData], "weights.bin", { type: "application/octet-stream" });
+    const metadataFile = new File([metadataJSON], "metadata.json", { type: "application/json" });
+
+    try {
+        model = await tmImage.loadFromFiles(modelFile, weightsFileObj, metadataFile);
+        classNames = await model.getClassLabels();
+        console.log("✅ Model loaded successfully with classes:", classNames);
+    } catch (error) {
+        console.error("❌ Error loading tmImage model:", error);
+    }
+}
+
+
+// File Input for selecting ZIP file through a dialog
+const fileInput = document.getElementById("fileInput");
+
+// Handle file selection
+fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (file && file.name.endsWith(".zip")) {
+        console.log("📂 ZIP file selected:", file.name);
+        await handleZipUpload(file);
+    } else {
+        alert("Please select a valid ZIP file.");
+    }
+});
+
+
+
+// Click or Drag & Drop Upload Handler
+const dropZone = document.getElementById("dropZone");
+dropZone.addEventListener("click", () => {
+    fileInput.click();
+});
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.backgroundColor = "#e2e6ea";
+});
+dropZone.addEventListener("dragleave", () => {
+    dropZone.style.backgroundColor = "#f8f9fa";
+});
+dropZone.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dropZone.style.backgroundColor = "#f8f9fa";
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".zip")) {
+        console.log("📂 ZIP file received:", file.name);
+        await handleZipUpload(file);
+    } else {
+        alert("Please drop a valid ZIP file.");
+    }
+});
+
+
+// Request permissions and list cameras
+async function getCameras() {
+            try {
+                // Request camera access to get full labels
+                await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // Now list devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                if (videoDevices.length === 0) {
+                    document.getElementById("deviceList").textContent = "No cameras found.";
+                    return;
+                }
+
+                const select = document.getElementById("cameraSelect");
+                select.innerHTML = ""; // Clear old options
+
+                let deviceInfo = "";
+
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement("option");
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Camera ${index + 1}`;
+                    select.appendChild(option);
+
+                    deviceInfo += `📷 ${device.label || "Unknown Camera"};\nID: ${device.deviceId}\n\n`;
+                });
+
+                document.getElementById("deviceList").textContent = deviceInfo;
+                
+
+                // Auto-select first camera
+                if (videoDevices.length > 0) {
+                    setupWebcam(videoDevices[0].deviceId);
+                }
+
+            } catch (error) {
+                console.error("Error accessing cameras:", error);
+                document.getElementById("deviceList").textContent = "⚠️ Cannot access cameras. Check permissions.";
+            }
+        }
+
+        // Switch to selected camera
+        async function setupWebcam(deviceId) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop()); // Stop old stream
+            }
+
+            try {
+                const constraints = { video: { deviceId: { exact: deviceId } } };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                document.getElementById("webcam").srcObject = stream;
+                currentStream = stream;
+                webcamElement = stream;
+            } catch (error) {
+                console.error("Error switching camera:", error);
+            }
+        }
+
+        // Listen for dropdown change
+        document.getElementById("cameraSelect").addEventListener("change", (event) => {
+            setupWebcam(event.target.value);
+});
+
+// Refresh camera list
+function refreshCameraList() {
+    getCameras();
+}
+
+function toggleMirror() {
+    isMirrored = !isMirrored;
+    const videoElement = document.getElementById("webcam");
+    videoElement.style.transform = isMirrored ? "scaleX(-1)" : "scaleX(1)"; // ✅ Flip preview
+}
+
+
+
+// Convert non-ASCII characters - skandinaviske tegn funker ikke på serieport
+function convertToASCIICompatible(str) {
+    const replacements = {
+        'Æ': 'AE', 'Ø': 'OE', 'Å': 'AA',
+        'æ': 'ae', 'ø': 'oe', 'å': 'aa',
+    };
+    return str.split('').map(char => replacements[char] || char).join('');
+}
+
+/*
+// Connect to Micro:bit over serial
+document.getElementById("connectButton").addEventListener("click", async () => {
+    try {
+        document.getElementById("connectButton").innerText = "Requesting port...";
+        const microbit = await navigator.serial.requestPort();
+        document.getElementById("connectButton").innerText = "Awaiting connection...";
+        await microbit.open({ baudRate: 115200 });
+        writer = microbit.writable.getWriter();
+        connectedUSB = true;
+        console.log("✅ Connected to Micro:bit!");
+        document.getElementById('connectButtonBT').disabled = true;
+        document.getElementById("connectButton").innerText = "Connected";
+    } catch (error) {
+        console.error("❌ Error connecting to Micro:bit:", error);
+        document.getElementById("connectButton").innerText = "Error!";
+    }
+});
+
+/*
+// Pair with Bluetooth - testet ting med denne, tar vare på for referanse
+document.getElementById("pairingButton").addEventListener("click", async () => {
+    try {
+        console.log('Requesting Bluetooth device...');
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true // Allow any Bluetooth device, no filters
+        });
+        console.log('Paired with device:', device.name || 'Unknown device');
+    } catch (error) {
+        console.error('Bluetooth pairing failed:', error);
+    }
+});
+
+*/
+
+
+
+/*connect over BT VIRKER! 
+... Men det er en liten rodeo å koble til hvis det er mye trafikk i luften.
+! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
+! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
+! Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting,
+  og prøver du å koble til mens windows er paret til micro:biten, smelter Chrome. Eller micro:bitten flimrer og gir 020 OUT OF MEMORY.
+   Ting jeg gjør som får ting til å til slutt virke (da micro:bit sto i PC med USB, og i strømkabel uten data)
+    1) Steng nettleser, trekk ut ledning fra mb
+    2) Åpne facerace.html, plugg i og sett mb i paringmodus
+    3) Par mb i windows, men ha "Bluetooth & other devices" åpen
+    4) Forsøk å pare mb i pairing-modus i nettleseren. Den skal dukke opp som BBC micro:bit [xxxxx]
+    5) Reset mb. Se om den dukker opp som BBC micro:bit
+    6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
+    7) Forsøk å pare med "BBC micro:bit" i nettleseren.
+    8) Reset og prøv igjen til det funker? micro:biten ser ut til å portene for å lytte etter kontakter, så om det er mange BT-enheter i nærheten som hilser på,
+       gir den 020 memory error etter noen få sekunder! Anbefaler å forsøke å pare enhetene en og en på rolige dager.
+
+micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass! 
+Kitronik MOVE er ukompatibel med Bluetooth.
+
+Anbefaler BT på Android (telefon, for å flexe) og USB på PC. Face Race var tenkt med USB-seriell til micro:bit som radio-kobler til en annen micro:bit i en BitBot.
+
+*/
+document.getElementById("connectButtonBT").addEventListener("click", async () => {
+    try {
+        console.log("Requesting micro:bit Bluetooth device...");
+        microbitDevice = await navigator.bluetooth.requestDevice({
+           // acceptAllDevices: true // Allow any Bluetooth device, no filters
+            filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
+            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
+        });
+        
+        console.log("Connecting to GATT Server...");
+        document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
+        microbitServer = await microbitDevice.gatt.connect();
+        document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
+        microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        
+        console.log("Finding TX Characteristic...");
+        document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
+        
+        console.log("Connected to micro:bit via Bluetooth");
+        connectedBT = true;
+     //   document.getElementById('connectButton').disabled = true;
+        document.getElementById("connectButtonBT").innerText = "Connected";
+    } catch (error) {
+        console.error("Bluetooth connection failed", error);
+        document.getElementById("connectButtonBT").innerText = "Error!";
+    }
+});
+
+
+//more fancy sendDataToMicroBit(BT)
+async function sendDataToMicrobitBT(signal) {
+    if (!microbitCharacteristic) {
+        console.error("❌ No BT connection thingy available to send data");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await microbitCharacteristic.writeValue(byte);
+        }
+        showEmojiBurst();
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+    
+
+
+
+
+// Send data over serial 
+async function sendDataToMicrobitUSB(signal) {
+    if (!writer) {
+        console.error("❌ No writer available to send data.");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await writer.write(byte);
+        }
+        showEmojiBurst();
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+
+/*
+// copypaste fra test-eksempel, tar vare på for referanse
+document.getElementById('sendButton').addEventListener('click', async () => {
+    if (!microbitCharacteristic) {
+        alert("Not connected to micro:bit");
+        return;
+    }
+    const message = "HELLO\n"; // Ensure newline is included
+    try {
+        console.log("Sending:", message);
+        await microbitCharacteristic.writeValue(new TextEncoder().encode(message));
+        console.log("Message sent: HELLO");
+    } catch (error) {
+        console.error("Failed to send message", error);
+    }
+});
+
+*/
+
+
+// Update UI with predictions
+function updateUI(prediction) {
+    const predictionList = document.getElementById("predictionList");
+    predictionList.innerHTML = "";
+    prediction.forEach(({ className, probability }) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = `${className}: ${(probability * 100).toFixed(2)}%`;
+        predictionList.appendChild(listItem);
+    });
+    document.getElementById("thresholdValue").textContent = document.getElementById("threshold").value;
+}
+
+// Run Prediction
+async function predict() {
+    const videoElement = document.getElementById("webcam");
+
+    if (!model || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
+        console.warn("⚠️ Waiting for webcam...");
+        requestAnimationFrame(predict);
+        return;
+    }
+
+    console.log("🔍 Running prediction...");
+
+    try {
+        const maxPredictions = model.getTotalClasses();
+        const predictionData = await model.predictTopK(videoElement, maxPredictions, isMirrored);
+
+        if (!predictionData || predictionData.length === 0) {
+            console.error("⚠️ Model returned empty prediction");
+            return;
+        }
+
+        updateUI(predictionData);
+
+        // Process prediction results
+        const threshold = document.getElementById("threshold").value / 100;
+        const topPrediction = predictionData[0];
+
+        if (topPrediction.probability >= threshold) {
+            const className = topPrediction.className;
+
+            if (className !== lastClassSent) {
+                lastClassSent = className;
+
+                if (connectedUSB) sendDataToMicrobitUSB(`${className}\n`);
+                if (connectedBT) sendDataToMicrobitBT(`${className}\n`);
+            }
+        }
+    } catch (error) {
+        console.error("❌ Prediction Error:", error);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    requestAnimationFrame(predict);
+}
+
+
+
+
+// Oversettelsesbit 
+
+const translations = {
+    en: {
+        title: "Face Race with Teachable Machine and micro:bit",
+        cameraSelector: "Camera Selector",
+        selectCamera: "Select Camera:",
+        refreshList: "🔄 Refresh List",
+        toggleMirror: "🔄 Mirror Video",
+        availableCameras: "Available Cameras:",
+        predictions: "Predictions:",
+        thresholdLabel: "Threshold (Confidence):",
+  //      connectButton: "Connect with USB Serial",
+        connectButtonBT: "Connect with Bluetooth",
+        dropZone: "Drag & Drop Model ZIP Here",
+        instructionsTitle: "Instructions:",
+        instructionsText1: "1) Create a model with teachablemachine.withgoogle.com and download as .zip. ",
+        instructionsText2: "2) Drag&Drop the .zip onto the next field, or click and select the file.",
+        instructionsText3: "3) press Connect to micro:bit and select your unit. (micro:bit [zizug] or similar name. Try re-pairing with your device from the system menu if nothing shows up.)",
+        instructionsText4: "Your micro:bit should now receive the Class names over USB or Bluetooth! Adjust the Confidence Threshold to suit your needs.",
+        instructionsText5: "If something breaks, press F12 and check the console for errors.",
+        instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
+    },
+    no: {
+        title: "KI Kart med Teachable Machine og micro:bit",
+        cameraSelector: "Kameravelger",
+        selectCamera: "Velg Kamera:",
+        refreshList: "🔄 Oppdater Liste",
+        toggleMirror: "🔄 Speilvend Video",
+        availableCameras: "Tilgjengelige Kameraer:",
+        predictions: "Modell-tolking:",
+        thresholdLabel: "Terskel (Sikkerhet):",
+ //       connectButton: "Koble til med USB Serial",
+        connectButtonBT: "Koble til med Bluetooth",
+        dropZone: "Dra og slipp ZIP-fil av modell her",
+        instructionsTitle: "Instruksjoner:",
+        instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
+        instructionsText2: "2) Dra og slipp filen inn på feltet under, eller klikk på feltet og velg filen, for å laste inn modellen.",
+        instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp. (f.eks micro:bit [zizug]). Forfatteren antar at du har paret micro:biten med enheten din i forkant.",
+        instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
+        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg. ",
+        instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
+    }
+};        
+
+function switchLanguage(lang) {
+    document.querySelector("h1").innerText = translations[lang].title;
+  //  document.querySelector("#left h2").innerText = translations[lang].availableCameras;
+  //  document.querySelector("#left h1").innerText = translations[lang].cameraSelector;
+
+    document.querySelector("label[for='cameraSelect']").innerText = translations[lang].selectCamera;
+    document.querySelector("button[onclick='refreshCameraList()']").innerText = translations[lang].refreshList;
+    document.querySelector("button[onclick='toggleMirror()']").innerText = translations[lang].toggleMirror;
+    document.querySelector("#deviceList").innerText = translations[lang].availableCameras;
+    document.querySelector("#predictions h2").innerText = translations[lang].predictions;
+    document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;    
+ //   document.querySelector("#connectButton").innerText = translations[lang].connectButton;
+    document.querySelector("#connectButtonBT").innerText = translations[lang].connectButtonBT;
+    document.querySelector("#dropZone").innerText = translations[lang].dropZone;
+
+    // Update instructions
+
+  
+    document.querySelector("#instructionsTitle h1").innerText = translations[lang].instructionsTitle;
+    document.querySelector("#instructionsText1").innerHTML = `<i>${translations[lang].instructionsText1}</i>`;
+    document.querySelector("#instructionsText2").innerHTML = `<i>${translations[lang].instructionsText2}</i>`;
+    document.querySelector("#instructionsText3").innerHTML = `<i>${translations[lang].instructionsText3}</i>`;
+    document.querySelector("#instructionsText4").innerHTML = `<i>${translations[lang].instructionsText4}</i>`;
+    document.querySelector("#instructionsText5").innerHTML = `<i>${translations[lang].instructionsText5}</i>`;
+    document.querySelector("#instructionsText6").innerHTML = `<i>${translations[lang].instructionsText6}</i>`;
+
+}
+
+
+function openPopup() {
+    document.getElementById("popup").style.display = "flex";
+}
+
+function closePopup() {
+    document.getElementById("popup").style.display = "none";
+}
+
+function copyText() {
+    let textArea = document.getElementById("popupText");
+    textArea.select();
+    textArea.setSelectionRange(0, 99999); // For mobile devices
+    document.execCommand("copy");
+    alert("Copied to clipboard!");
+}
+
+
+function showEmojiBurst() {
+  const container = document.getElementById("emojiBurstContainer");
+
+  for (let i = 0; i < 12; i++) {
+    const emoji = document.createElement("div");
+    emoji.className = "emoji-burst";
+    emoji.innerText = "⚡";
+
+    // Random horizontal position (from 10% to 90%)
+    emoji.style.left = Math.random() * 80 + 10 + "%";
+
+    // Slight animation delay for variation
+    emoji.style.animationDelay = (Math.random() * 0.3).toFixed(2) + "s";
+
+    container.appendChild(emoji);
+
+    // Remove after animation completes
+    setTimeout(() => emoji.remove(), 1000);
+  }
+}
+
+
+
+
+
+
+// Start Everything
+async function init() {
+    switchLanguage('no')
+    await getCameras();
+    predict();
+}
+init();
+
+
+
+
+
+
+</script>
+
+<div id="emojiBurstContainer"></div>
+</body>
+</html>
