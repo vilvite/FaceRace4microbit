@@ -42,7 +42,7 @@ body::before {
 }
 
 /* Zones */
-#left, #right, #center {
+#left, #right {
     padding: 20px;
 }
 
@@ -51,10 +51,6 @@ body::before {
     text-align: left;
 }
 
-#center {
-    flex: 1; /* Takes equal width */
-    text-align: center;
-}
 
 #right {
     flex: 1;
@@ -63,10 +59,12 @@ body::before {
 
 /* Webcam Styling square*/
  #webcam {
-    width: 224px;
-    height: 224px;
+    width: 64%;
+    aspect-ratio: 1 / 1; 
     object-fit: cover; /* Ensures square cropping */
     transform: scaleX(-1); /* Start mirrored */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
   }
 
 
@@ -114,6 +112,20 @@ body::after {
     background-color: #ddd;
 }
 
+#selectButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+#selectButtons button {
+  width: auto; /* Override the fixed width */
+  margin: 0;   /* Remove inherited auto-centering */
+}
+
+
+
 /* Popup styling */
 .popup {
     display: none;
@@ -156,6 +168,34 @@ textarea {
 }
 
 
+#emojiBurstContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 9999;
+}
+
+.emoji-burst {
+  position: absolute;
+  font-size: 2rem;
+  animation: burst 1s ease-out forwards;
+  user-select: none;
+}
+
+@keyframes burst {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) scale(1.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
 
     </style>
 </head>
@@ -169,29 +209,19 @@ textarea {
     <div id="left">
         
         <!-- Proper squared?-->
-        <h1>Camera Selector</h1>
+        
         <label for="cameraSelect">Select Camera:</label>
         <select id="cameraSelect"></select>
         <button onclick="refreshCameraList()">🔄 Refresh List</button>
+        <button onclick="toggleMirror()">🔄 Mirror Video</button> <!-- Mirror Button -->
+        <br>                
         
-        <h2>Available Cameras:</h2>
-        <pre id="deviceList">Loading...</pre>
-        
-        <!-- 🎥 Video feed (Now forced to be 224x224) -->
         <video id="webcam" autoplay playsinline></video>
         <canvas id="mirrorCanvas" hidden></canvas>
         <br>
-        <button onclick="toggleMirror()">🔄 Mirror Video</button> <!-- Mirror Button -->
-        <br>
-        <div id="predictions">
-            <h2>Predictions:</h2>
-            <ul id="predictionList"></ul>
-        </div>
-        <div id="thresholdContainer">
-            <label for="threshold">Threshold (Confidence): </label>
-            <input type="range" id="threshold" min="0" max="100" value="50">
-            <span id="thresholdValue">50</span>%
-        </div>
+        
+        
+       
                      
     </div>
 
@@ -204,31 +234,59 @@ textarea {
 
     <div id="right">
         <div id="instructionsTitle"><h1>Instructions:</h1></div>
+        <div id="selectButtons">
         <button onclick="switchLanguage('en')">🇬🇧 English</button>
         <button onclick="switchLanguage('no')">🇳🇴 Norsk</button>
+        </div>
         <div id="instructionsText1"><i>Lorem Ipsum og andre ripsbærbusker</i></div>
         <br>
         <div id="instructionsText2"><i></i></div>
         <div style="text-align: center;">
         <div id="dropZone">Drag & Drop Model ZIP Here</div></div style>
         <input type="file" id="fileInput" style="display:none;" accept=".zip">
+
+        
         <div id="instructionsText3"><i></i></div>
+        <div id="selectButtons">
         <button id="connectButton">Connect to Micro:bit USB serial</button>
         <!-- <button id="pairingButton">Pair Bluetooth</button> for testing-->
         <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
+        </div>
         <br>
+        
+         <div id="predictions">
+            <h2>Predictions:</h2>
+            <ul id="predictionList"></ul>
+        </div>
+        
+        <div id="thresholdContainer">
+            <label for="threshold">Threshold (Confidence): </label>
+            <input type="range" id="threshold" min="0" max="100" value="50">
+            <span id="thresholdValue">50</span>%
+        </div>
+        <br>
+        
+        
+
         <div id="instructionsText4"><i></i></div>
         <br>
         <div id="instructionsText5"><i></i></div>
         <br>
         <div id="instructionsText6"><i></i></div>
+        <div id="selectButtons">
         <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_i2ied6JsmUD3','_blank')">Demo code USB</button>
         <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_JeYeWD9KTfH5','_blank')">Demo code Bluetooth</button>
-        
+        </div>
     </div>
 </div>
 
-<h3>v2.0 - 16.07.25</h3>
+<br>
+<br>
+
+<h3>v2.1 - 17.07.25</h3>
+<h2>Available Cameras:</h2>
+<pre id="deviceList">Loading...</pre>
+
 
 <!-- TensorFlow.js & JSZip -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
@@ -518,6 +576,7 @@ async function sendDataToMicrobitBT(signal) {
             const byte = new TextEncoder().encode(signalToSend[i]);
             await microbitCharacteristic.writeValue(byte);
         }
+        showEmojiBurst();
     } catch (error) {
         console.error("❌ Error sending data:", error);
     }
@@ -540,6 +599,7 @@ async function sendDataToMicrobitUSB(signal) {
             const byte = new TextEncoder().encode(signalToSend[i]);
             await writer.write(byte);
         }
+        showEmojiBurst();
     } catch (error) {
         console.error("❌ Error sending data:", error);
     }
@@ -645,7 +705,7 @@ const translations = {
         instructionsText2: "2) Drag&Drop the .zip onto the next field, or click and select the file.",
         instructionsText3: "3) press Connect to micro:bit and select your unit. Must be using Chrome or Edge!",
         instructionsText4: "Your micro:bit should now receive the Class names over USB or Bluetooth! Adjust the Confidence Threshold to suit your needs.",
-        instructionsText5: "If something breaks, press F12 and check the console for errors. Predictions does not match training data at the moment.",
+        instructionsText5: "If something breaks, press F12 and check the console for errors.",
         instructionsText6: "Inspired by Steamlabs make: AI Robots. Questions? Comments? Feel free to contact me at ah@vilvite.no"
     },
     no: {
@@ -655,7 +715,7 @@ const translations = {
         refreshList: "🔄 Oppdater Liste",
         toggleMirror: "🔄 Speilvend Video",
         availableCameras: "Tilgjengelige Kameraer:",
-        predictions: "Prediksjoner:",
+        predictions: "Modell-tolking:",
         thresholdLabel: "Terskel (Sikkerhet):",
         connectButton: "Koble til med USB Serial",
         connectButtonBT: "Koble til med Bluetooth",
@@ -663,28 +723,31 @@ const translations = {
         instructionsTitle: "Instruksjoner:",
         instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
         instructionsText2: "2) Dra og slipp filen inn på feltet under, eller klikk på feltet og velg filen, for å laste inn modellen.",
-        instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp (NB! Bruk Chrome eller Edge).",
+        instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp (NB! Bruk Chrome eller Edge.).",
         instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over USB eller Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
-        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg.",
+        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg. ",
         instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
     }
 };        
 
 function switchLanguage(lang) {
     document.querySelector("h1").innerText = translations[lang].title;
-    document.querySelector("#left h2").innerText = translations[lang].availableCameras;
-    document.querySelector("#left h1").innerText = translations[lang].cameraSelector;
+  //  document.querySelector("#left h2").innerText = translations[lang].availableCameras;
+  //  document.querySelector("#left h1").innerText = translations[lang].cameraSelector;
+
     document.querySelector("label[for='cameraSelect']").innerText = translations[lang].selectCamera;
     document.querySelector("button[onclick='refreshCameraList()']").innerText = translations[lang].refreshList;
     document.querySelector("button[onclick='toggleMirror()']").innerText = translations[lang].toggleMirror;
     document.querySelector("#deviceList").innerText = translations[lang].availableCameras;
     document.querySelector("#predictions h2").innerText = translations[lang].predictions;
-    document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;
+    document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;    
     document.querySelector("#connectButton").innerText = translations[lang].connectButton;
     document.querySelector("#connectButtonBT").innerText = translations[lang].connectButtonBT;
     document.querySelector("#dropZone").innerText = translations[lang].dropZone;
 
     // Update instructions
+
+  
     document.querySelector("#instructionsTitle h1").innerText = translations[lang].instructionsTitle;
     document.querySelector("#instructionsText1").innerHTML = `<i>${translations[lang].instructionsText1}</i>`;
     document.querySelector("#instructionsText2").innerHTML = `<i>${translations[lang].instructionsText2}</i>`;
@@ -713,6 +776,32 @@ function copyText() {
 }
 
 
+function showEmojiBurst() {
+  const container = document.getElementById("emojiBurstContainer");
+
+  for (let i = 0; i < 12; i++) {
+    const emoji = document.createElement("div");
+    emoji.className = "emoji-burst";
+    emoji.innerText = "⚡";
+
+    // Random horizontal position (from 10% to 90%)
+    emoji.style.left = Math.random() * 80 + 10 + "%";
+
+    // Slight animation delay for variation
+    emoji.style.animationDelay = (Math.random() * 0.3).toFixed(2) + "s";
+
+    container.appendChild(emoji);
+
+    // Remove after animation completes
+    setTimeout(() => emoji.remove(), 1000);
+  }
+}
+
+
+
+
+
+
 // Start Everything
 async function init() {
     switchLanguage('no')
@@ -720,7 +809,14 @@ async function init() {
     predict();
 }
 init();
+
+
+
+
+
+
 </script>
 
+<div id="emojiBurstContainer"></div>
 </body>
 </html>
