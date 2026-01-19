@@ -6,6 +6,10 @@ https://vilvite.github.io/FaceRace4microbit/facerace.html
 
 Testing log in Norwegian for my colleagues:
 
+V 3.0 - 19.1.26
+Massiv oppgradering av user interface. Har midlertidig tatt bort engelsk/norsk oversettelse, men lagt til funskjon for å ta imot zipfil på hele siden, en blinkende knapp som forteller at micro:biten har mistet kontakten, og konsoll-logg i bunnen av dokumentet.
+Har i det siste oppdaget mystiske problemer med at micro:biter som er pairet med maskinen ikke vises i tilkoblingsvinduet. Fjerning/re-pairing virker, men klarer ikke fremprovosere feilen. Trodde det hadde med at micro:biten broadcastet ulike services med og uten Bluetooth-biblioteket.
+
 V 2.0 - 16.7.25
 Har fikset problemene med at modellen leste helt feil. Viste seg at jeg dekodet bildene som rene Tensorflow-modeller i stedet for Teachable Machine-modeller. Usikker på hvilken metode som er lettest å fortsette med, håpet er å lage en modelltrener som kan kjøre på mobile enheter. Klarer nå å styre en bil med knyttneven og føler meg godt fornøyd!
 
