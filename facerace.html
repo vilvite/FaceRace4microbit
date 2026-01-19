@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>KI Kart Interface v2.0</title>
+    <title>KI Kart Interface v3.0</title>
+    
     <style>
         body {
     font-family: Arial, sans-serif;
@@ -17,6 +18,14 @@
     flex-direction: column;
     
 }
+        /* Color Variables */
+        :root {
+            --primary-color:   #12d633  ;
+            --secondary-color:  #000000   ;
+            --tertiary-color:   #4075ff   ;
+            --quaternary-color:   #ffe000    ;
+            --quinary-color:  #f2784b   ;
+        }
 
 body::before {
     content: "";
@@ -41,25 +50,147 @@ body::before {
     height: 90%;
 }
 
+
+/* LIMER INN GREIER HER~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/* Predictions Container */
+        #predictionsContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+
+        /* Prediction Styling */
+        #predictionStatus, #predictionList {
+            padding: 20px;
+            width: 60%;
+            background-color: rgba(61, 228, 83, 0.1); /* Light background for prediction area */
+
+        }
+
+        #predictionList, #thresholdContainer {
+            visibility: hidden;
+        }
+
+        #predictionStatus {
+            text-align: center;
+            color: gray;
+            font-style: italic;
+        }
+
+        
+        /* Prediction List Styling */
+        #predictionList {
+            list-style: none;
+        }
+
+        /* prediction row: label, bar and percent on one line */
+        .prediction-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .prediction-label {
+            flex: 0 0 100px; /* fixed width for labels — adjust as needed */
+            text-align: right; /* align labels nicely */
+            margin-right: 8px;
+        }
+
+        .bar-container {
+            flex: 1 1 auto;
+            background: rgba(0,0,0,0.06);
+            height: 14px;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 400ms ease;
+        }
+        
+        .prediction-percent {
+            flex: 0 0 60px; /* fixed width for percentages */
+            text-align: right;
+        }
+
+
+        /* Confidence threshold styling */
+        #thresholdContainer {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0.6rem auto;
+            padding: 8px;
+            width: 80%;
+            max-width: 560px;
+        }
+
+        /* label and percent */
+        #thresholdContainer label {
+            color: var(--primary-color);
+            white-space: nowrap;
+        }
+
+        #thresholdValue {
+            color: #333;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* range slider base */
+        #threshold {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 14px;                      /* same visual height as .bar-container */
+            margin: 0;
+            background: rgba(0,0,0,0.06);
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+            transition: box-shadow .12s ease;
+        }
+
+        /* WebKit: thumb & track */
+        #threshold::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background: #fff;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            margin-top: -3px; /* center the thumb on the track */
+        }
+        /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~LIMTE INN GREIER HER, TUSEN TAKK TIL INSPIRIA FOR DE VAKRE SØYLEDIAGRAMMENE <3 */
+
+
+
 /* Zones */
 #left, #right {
     padding: 20px;
 }
 
 #left {
-    flex: 2;  /* Takes more space */
+    flex: 1;  /* Takes more space */
     text-align: left;
 }
 
 
 #right {
-    flex: 1;
+    flex: 2;
     text-align: left;
 }
 
 /* Webcam Styling square*/
  #webcam {
-    width: 64%;
+    width: 80%;
     aspect-ratio: 1 / 1; 
     object-fit: cover; /* Ensures square cropping */
     transform: scaleX(-1); /* Start mirrored */
@@ -123,6 +254,19 @@ body::after {
   width: auto; /* Override the fixed width */
   margin: 0;   /* Remove inherited auto-centering */
 }
+
+
+.flash-red {
+    animation: flashRed 0.8s infinite;
+}
+
+@keyframes flashRed {
+    0%   { background-color: red; }
+    50%  { background-color: transparent; }
+    100% { background-color: red; }
+}
+
+
 
 
 
@@ -201,7 +345,8 @@ textarea {
 </head>
 <body>
 
-<h1>Face Race testside tjollahoppsannsa! Hvis du leser dette har noe gått i stykker</h1>
+<h1>Face Race testside tjollahoppsannsa! Hvis du leser dette har noe gått i stykker </h1>
+
 <!--<div class="fixed-image"></div>-->
 
 
@@ -219,32 +364,39 @@ textarea {
         <video id="webcam" autoplay playsinline></video>
         <canvas id="mirrorCanvas" hidden></canvas>
         <br>
+
+<!--    TRANSLATION BUTTONS: Development on hold as of 3.0
         
-        
+<div id="selectButtons">
+        <button onclick="switchLanguage('en')">🇬🇧 English</button>
+        <button onclick="switchLanguage('no')">🇳🇴 Norsk</button>
+        </div>   -->
+         
        
                      
     </div>
 
     <!-- <div id="center">
              
-        
+        Center area no longer used
 
         
     </div> -->
 
     <div id="right">
+        
         <div id="instructionsTitle"><h1>Instructions:</h1></div>
-        <div id="selectButtons">
-        <button onclick="switchLanguage('en')">🇬🇧 English</button>
-        <button onclick="switchLanguage('no')">🇳🇴 Norsk</button>
-        </div>
-        <div id="instructionsText1"><i>Lorem Ipsum og andre ripsbærbusker</i></div>
+        
+        <div id="instructionsText1"><i>1) Lag en modell med</i> <a href="https://teachablemachine.withgoogle.com/train/image" target="_blank"> teachablemachine.withgoogle.com</a> og last den ned som .zip.</div>
         <br>
         <div id="instructionsText2"><i></i></div>
-        <div style="text-align: center;">
-        <div id="dropZone">Drag & Drop Model ZIP Here</div></div style>
+        <br>
+            
+       <!--! 
+       <div style="text-align: center;">
+       <div id="dropZone">Drag & Drop Model ZIP Here</div></div style>
         <input type="file" id="fileInput" style="display:none;" accept=".zip">
-
+ -->
         
         <div id="instructionsText3"><i></i></div>
         <div id="selectButtons">
@@ -254,18 +406,32 @@ textarea {
         </div>
         <br>
         
-         <div id="predictions">
-            <h2>Predictions:</h2>
-            <ul id="predictionList"></ul>
-        </div>
+
+
+        <!-- Predictions -->
         
-        <div id="thresholdContainer">
-            <label for="threshold">Threshold (Confidence): </label>
-            <input type="range" id="threshold" min="0" max="100" value="50">
-            <span id="thresholdValue">50</span>%
-        </div>
+
+        <div id="predictionsContainer">
+            
+            <!-- Prediction Status & List -->
+            <div class="text-block" id="predictionStatus">Ingen modell lastet. Klikk her for å åpne filutforsker.</div>
+            <div id="predictionList"></div>
+            <input type="file" id="fileInput" style="display:none;" accept=".zip">
+
+            <!-- Confidence Threshold Slider -->
+            <div class="text-block" id="thresholdContainer">
+                <label for="threshold">Confidence threshold</label>
+                <input type="range" id="threshold" min="0" max="100" step="5" value="50">
+                <span id="thresholdValue">50</span>%
+            </div>
+
+
+
         <br>
-        
+        <h2>Status</h2>
+    <div id="output" style="background-color: black; color: white; padding: 10px; font-family: monospace; height: 100px; overflow-y: scroll;"></div>
+    <h2>Tilgjengelige kameraer:</h2>
+    <pre id="deviceList">Loading...</pre>
         
 
         <div id="instructionsText4"><i></i></div>
@@ -277,15 +443,14 @@ textarea {
         <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_i2ied6JsmUD3','_blank')">Demo code USB</button>
         <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_JeYeWD9KTfH5','_blank')">Demo code Bluetooth</button>
         </div>
+        <h3>v3.0 - 19.01.26</h3>
     </div>
 </div>
 
 <br>
 <br>
 
-<h3>v2.1 - 17.07.25</h3>
-<h2>Available Cameras:</h2>
-<pre id="deviceList">Loading...</pre>
+
 
 
 <!-- TensorFlow.js & JSZip -->
@@ -309,6 +474,49 @@ let microbitDevice;
 let microbitServer;
 let microbitService;
 let microbitCharacteristic;
+
+// Console log stuff here
+
+const outputElement = document.getElementById("output");
+
+        // 1. Unified function to handle different log levels
+        function addToOutput(message, type = 'log') {
+            const entry = document.createElement('div');
+            entry.className = `log-msg log-${type}`;
+            
+            // Format: [TIMESTAMP] [TYPE] Message
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+            
+            outputElement.appendChild(entry);
+            outputElement.scrollTop = outputElement.scrollHeight;
+        }
+
+        // 2. Capture standard logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            addToOutput(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+
+        // 3. Capture error logs
+        const originalError = console.error;
+        console.error = function(...args) {
+            addToOutput(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+
+        // 4. Global Listener for actual runtime crashes (e.g. syntax/reference errors)
+        window.onerror = function(msg, url, line) {
+            console.error(`${msg} (Line: ${line})`);
+            return false;
+        };
+
+
+        // Example usage (this output will now appear in the <div>)
+        console.log(`Live console log start: ${new Date().toLocaleTimeString()}`);
+
+
 
 
 // Load Model from ZIP using tmImage.loadFromFiles
@@ -335,12 +543,19 @@ async function handleZipUpload(file) {
     const metadataFile = new File([metadataJSON], "metadata.json", { type: "application/json" });
 
     try {
-        model = await tmImage.loadFromFiles(modelFile, weightsFileObj, metadataFile);
-        classNames = await model.getClassLabels();
-        console.log("✅ Model loaded successfully with classes:", classNames);
-    } catch (error) {
-        console.error("❌ Error loading tmImage model:", error);
-    }
+            // Remove "Model not loaded" status, if present
+            const statusEl = document.getElementById("predictionStatus");
+            if (statusEl) statusEl.remove();
+            
+            model = await tmImage.loadFromFiles(modelFile, weightsFileObj, metadataFile);
+            classNames = await model.getClassLabels();
+            console.log("✅ Model loaded successfully with classes:", classNames);
+            document.getElementById("predictionList").style.visibility = "visible";
+            document.getElementById("thresholdContainer").style.visibility = "visible";
+        } catch (error) {
+            console.error("❌ Error loading tmImage model:", error);
+            document.getElementById("predictionStatus").textContent = "❌ Error loading model.";
+        }
 }
 
 
@@ -361,7 +576,7 @@ fileInput.addEventListener("change", async () => {
 
 
 // Click or Drag & Drop Upload Handler
-const dropZone = document.getElementById("dropZone");
+const dropZone = document.getElementById("predictionStatus");
 dropZone.addEventListener("click", () => {
     fileInput.click();
 });
@@ -381,7 +596,34 @@ dropZone.addEventListener("drop", async (e) => {
         console.log("📂 ZIP file received:", file.name);
         await handleZipUpload(file);
     } else {
-        alert("Please drop a valid ZIP file.");
+        alert("Velg en gyldig .zip-fil (f.eks. tm-my-image-model.zip).");
+    }
+});
+
+// Utvider til å ta imot drops på hele siden
+
+document.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.backgroundColor = "#e2e6ea";
+});
+
+document.addEventListener("dragleave", (e) => {
+    // only reset when leaving the window
+    if (e.relatedTarget === null) {
+        dropZone.style.backgroundColor = "#f8f9fa";
+    }
+});
+
+document.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dropZone.style.backgroundColor = "#f8f9fa";
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".zip")) {
+        console.log("📂 ZIP file received:", file.name);
+        await handleZipUpload(file);
+    } else {
+        alert("Velg en gyldig .zip-fil (f.eks. tm-my-image-model.zip).");
     }
 });
 
@@ -510,27 +752,13 @@ document.getElementById("pairingButton").addEventListener("click", async () => {
 
 
 
-/*connect over BT VIRKER! 
-... Men det er en liten rodeo å koble til hvis det er mye trafikk i luften.
+/*connect over BT virker, men pr dags dato er det en merkelig feil som oppstår når koden på micro:biten oppdateres etter at den har blitt paret.
 ! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
-! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
-! Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting,
-  og prøver du å koble til mens windows er paret til micro:biten, smelter Chrome. Eller micro:bitten flimrer og gir 020 OUT OF MEMORY.
-   Ting jeg gjør som får ting til å til slutt virke (da micro:bit sto i PC med USB, og i strømkabel uten data)
-    1) Steng nettleser, trekk ut ledning fra mb
-    2) Åpne facerace.html, plugg i og sett mb i paringmodus
-    3) Par mb i windows, men ha "Bluetooth & other devices" åpen
-    4) Forsøk å pare mb i pairing-modus i nettleseren. Den skal dukke opp som BBC micro:bit [xxxxx]
-    5) Reset mb. Se om den dukker opp som BBC micro:bit
-    6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
-    7) Forsøk å pare med "BBC micro:bit" i nettleseren.
-    8) Reset og prøv igjen til det funker? micro:biten ser ut til å portene for å lytte etter kontakter, så om det er mange BT-enheter i nærheten som hilser på,
-       gir den 020 memory error etter noen få sekunder! Anbefaler å forsøke å pare enhetene en og en på rolige dager.
+! micro:bit ser ut til å trenge BLUETOOTH-biblioteket i koden, ikke de vanlige Radio-funksjonene, for å kunne pares og oppdages korrekt. Her er det noe rart jeg ikke har funnet ut av enda.
+! micro:bit må pares med enheten din, PC/Android. trykk A+B+Reset og legg til micro:bit [ZAZEV] e.l.
+! Dersom flere micro:biter er i nærheten, vil de vises med MAC-adresse i feltet. Har ikke funnet ut hvordan jeg kan få de til å vise de normale navnene istedet.
 
-micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass! 
-Kitronik MOVE er ukompatibel med Bluetooth.
 
-Anbefaler BT på Android (telefon, for å flexe) og USB på PC. Face Race var tenkt med USB-seriell til micro:bit som radio-kobler til en annen micro:bit i en BitBot.
 
 */
 document.getElementById("connectButtonBT").addEventListener("click", async () => {
@@ -543,22 +771,26 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
         });
         
         console.log("Connecting to GATT Server...");
-        document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
+        //document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
         microbitServer = await microbitDevice.gatt.connect();
-        document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
+        console.log("Awaiting Primary Service");
+        //document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
         microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
         
         console.log("Finding TX Characteristic...");
-        document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
+        //document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
         microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
         
-        console.log("Connected to micro:bit via Bluetooth");
+        //console.log("Connected to micro:bit via Bluetooth");
+        console.log("Connected to", microbitDevice.name, " via Bluetooth");
         connectedBT = true;
         document.getElementById('connectButton').disabled = true;
-        document.getElementById("connectButtonBT").innerText = "Connected";
-    } catch (error) {
-        console.error("Bluetooth connection failed", error);
-        document.getElementById("connectButtonBT").innerText = "Error!";
+        connectButtonBT.classList.remove("flash-red");
+        //document.getElementById("connectButtonBT").innerText = "Connected";
+    } catch (log) {
+        console.log("Bluetooth connection failed, ", log);
+        
+        //document.getElementById("connectButtonBT").innerText = "Error!";
     }
 });
 
@@ -579,10 +811,23 @@ async function sendDataToMicrobitBT(signal) {
         showEmojiBurst();
     } catch (error) {
         console.error("❌ Error sending data:", error);
+
+    if (
+        error.name === "NetworkError" &&
+        error.message.includes("GATT Server is disconnected")
+    ) {
+        handleBluetoothDisconnected();
+    }
+
     }
 }
     
 
+function handleBluetoothDisconnected() {
+    if (!connectButtonBT) return;
+document.getElementById('connectButton').disabled = false;
+    connectButtonBT.classList.add("flash-red");
+}
 
 
 
@@ -624,6 +869,69 @@ document.getElementById('sendButton').addEventListener('click', async () => {
 
 */
 
+// Update UI with predictions
+    function updateUI(prediction) {
+        const predictionList = document.getElementById("predictionList");
+        predictionList.innerHTML = "";
+
+        // get color variables from :root and build a cycling array
+        const rootStyles = getComputedStyle(document.documentElement);
+        const colorVars = ['--primary-color', '--secondary-color', '--tertiary-color', '--quaternary-color', '--quinary-color'];
+        const colors = colorVars.map(v => rootStyles.getPropertyValue(v).trim() || '#cccccc');
+
+        // sort alphabetically by className (case-insensitive)
+        const sorted = prediction.slice().sort((a, b) =>
+            a.className.toLowerCase().localeCompare(b.className.toLowerCase())
+        );
+
+        sorted.forEach(({ className, probability }, idx) => {
+            const li = document.createElement("li");
+            li.className = "prediction-item text-block";
+
+            const row = document.createElement("div");
+            row.className = "prediction-row";
+
+            // label (colored to match bar)
+            const label = document.createElement("span");
+            label.className = "prediction-label";
+            const color = colors[idx % colors.length];
+            label.textContent = className;
+            label.style.color = color;
+
+            // bar
+            const barContainer = document.createElement("div");
+            barContainer.className = "bar-container";
+
+            const fill = document.createElement("div");
+            fill.className = "bar-fill";
+            fill.style.background = color;
+            fill.style.width = (probability * 100) + "%";
+            fill.setAttribute("role", "progressbar");
+            fill.setAttribute("aria-valuemin", "0");
+            fill.setAttribute("aria-valuemax", "100");
+            fill.setAttribute("aria-valuenow", Math.round(probability * 100));
+
+            barContainer.appendChild(fill);
+
+            // percent
+            const percentSpan = document.createElement("span");
+            percentSpan.className = "prediction-percent";
+            percentSpan.textContent = Math.round(probability * 100) + "%";
+
+            // assemble: label | bar (flex) | percent
+            row.appendChild(label);
+            row.appendChild(barContainer);
+            row.appendChild(percentSpan);
+
+            li.appendChild(row);
+            predictionList.appendChild(li);
+        });
+        document.getElementById("thresholdValue").textContent = document.getElementById("threshold").value;
+    }
+
+
+
+/* GAMMEL BIT ~~~~~~~~~~~~~~
 
 // Update UI with predictions
 function updateUI(prediction) {
@@ -636,8 +944,10 @@ function updateUI(prediction) {
     });
     document.getElementById("thresholdValue").textContent = document.getElementById("threshold").value;
 }
+GAMMEL BIT ~~~~~~  */  
 
-// Run Prediction
+
+//Run Prediction
 async function predict() {
     const videoElement = document.getElementById("webcam");
 
@@ -647,7 +957,7 @@ async function predict() {
         return;
     }
 
-    console.log("🔍 Running prediction...");
+   // console.log("🔍 Running prediction...");
 
     try {
         const maxPredictions = model.getTotalClasses();
@@ -683,9 +993,25 @@ async function predict() {
 }
 
 
+    // Update slider visual fill and value label
+    function updateThresholdUI() {
+        const input = document.getElementById("threshold");
+        const value = Number(input.value);
+        // paint filled portion with gradient matching prediction bars
+        input.style.background = `linear-gradient(90deg, ${getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim()} ${value}%, rgba(0,0,0,0.06) ${value}%)`;
+        document.getElementById("thresholdValue").textContent = value;
+    }
+
+    // wire up events
+    const thresholdInput = document.getElementById("threshold");
+    if (thresholdInput) {
+        thresholdInput.addEventListener("input", updateThresholdUI);
+        // initialize appearance on load
+        updateThresholdUI();
+    }
 
 
-// Oversettelsesbit 
+// Oversettelsesbit : Pauser denne i Versjon 3.0, for mange nye felter med mystiske regler for visning som er lavt prioritert.
 
 const translations = {
     en: {
@@ -699,7 +1025,7 @@ const translations = {
         thresholdLabel: "Threshold (Confidence):",
         connectButton: "Connect with USB Serial",
         connectButtonBT: "Connect with Bluetooth",
-        dropZone: "Drag & Drop Model ZIP Here",
+       // dropZone: "Drag & Drop Model ZIP Here",
         instructionsTitle: "Instructions:",
         instructionsText1: "1) Create a model with teachablemachine.withgoogle.com and download as .zip. ",
         instructionsText2: "2) Drag&Drop the .zip onto the next field, or click and select the file.",
@@ -711,19 +1037,19 @@ const translations = {
     no: {
         title: "KI Kart med Teachable Machine og micro:bit",
         cameraSelector: "Kameravelger",
-        selectCamera: "Velg Kamera:",
-        refreshList: "🔄 Oppdater Liste",
-        toggleMirror: "🔄 Speilvend Video",
+        selectCamera: "Velg kamera:",
+        refreshList: "🔄 Oppdater liste",
+        toggleMirror: "🔄 Speilvend video",
         availableCameras: "Tilgjengelige Kameraer:",
         predictions: "Modell-tolking:",
         thresholdLabel: "Terskel (Sikkerhet):",
         connectButton: "Koble til med USB Serial",
         connectButtonBT: "Koble til med Bluetooth",
-        dropZone: "Dra og slipp ZIP-fil av modell her",
+      //  dropZone: "Dra og slipp ZIP-fil av modell her",
         instructionsTitle: "Instruksjoner:",
-        instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
-        instructionsText2: "2) Dra og slipp filen inn på feltet under, eller klikk på feltet og velg filen, for å laste inn modellen.",
-        instructionsText3: "3) Trykk Koble til micro:bit-knappen, og velg enheten din i vinduet som dukker opp (NB! Bruk Chrome eller Edge.).",
+  //      instructionsText1: "1) Lag en modell med teachablemachine.withgoogle.com og last den ned som .zip.",
+        instructionsText2: "2) Last inn modellen ved å dra og slippe .zip-filen inn på denne siden, eller klikk på det grønne feltet under for å lete.",
+        instructionsText3: "3) Trykk en av Koble til-knappene, og velg riktig enhet i vinduet som dukker opp (NB! Bruk Chrome eller Edge.).",
         instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over USB eller Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
         instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg. ",
         instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
@@ -739,17 +1065,17 @@ function switchLanguage(lang) {
     document.querySelector("button[onclick='refreshCameraList()']").innerText = translations[lang].refreshList;
     document.querySelector("button[onclick='toggleMirror()']").innerText = translations[lang].toggleMirror;
     document.querySelector("#deviceList").innerText = translations[lang].availableCameras;
-    document.querySelector("#predictions h2").innerText = translations[lang].predictions;
+ //   document.querySelector("#predictions h2").innerText = translations[lang].predictions;
     document.querySelector("label[for='threshold']").innerText = translations[lang].thresholdLabel;    
     document.querySelector("#connectButton").innerText = translations[lang].connectButton;
     document.querySelector("#connectButtonBT").innerText = translations[lang].connectButtonBT;
-    document.querySelector("#dropZone").innerText = translations[lang].dropZone;
+  //  document.querySelector("#dropZone").innerText = translations[lang].dropZone;
 
     // Update instructions
 
   
     document.querySelector("#instructionsTitle h1").innerText = translations[lang].instructionsTitle;
-    document.querySelector("#instructionsText1").innerHTML = `<i>${translations[lang].instructionsText1}</i>`;
+  //  document.querySelector("#instructionsText1").innerHTML = `<i>${translations[lang].instructionsText1}</i>`;
     document.querySelector("#instructionsText2").innerHTML = `<i>${translations[lang].instructionsText2}</i>`;
     document.querySelector("#instructionsText3").innerHTML = `<i>${translations[lang].instructionsText3}</i>`;
     document.querySelector("#instructionsText4").innerHTML = `<i>${translations[lang].instructionsText4}</i>`;
