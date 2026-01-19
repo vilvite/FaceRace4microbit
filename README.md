@@ -6,6 +6,9 @@ https://vilvite.github.io/FaceRace4microbit/facerace.html
 
 Testing log in Norwegian for my colleagues:
 
+V 3.1 - 19.1.26
+Laget en ekstra knapp for å koble til Bluetooth uten filter, for å se om dette hjelper på de mystiske micro:bitene som forsvinner
+
 V 3.0 - 19.1.26
 Massiv oppgradering av user interface. Har midlertidig tatt bort engelsk/norsk oversettelse, men lagt til funskjon for å ta imot zipfil på hele siden, en blinkende knapp som forteller at micro:biten har mistet kontakten, og konsoll-logg i bunnen av dokumentet.
 Har i det siste oppdaget mystiske problemer med at micro:biter som er pairet med maskinen ikke vises i tilkoblingsvinduet. Fjerning/re-pairing virker, men klarer ikke fremprovosere feilen. Trodde det hadde med at micro:biten broadcastet ulike services med og uten Bluetooth-biblioteket.
