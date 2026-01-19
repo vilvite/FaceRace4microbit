@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>KI Kart Interface v3.0</title>
+    <title>KI Kart Interface v3.1</title>
     
     <style>
         body {
@@ -190,7 +190,7 @@ body::before {
 
 /* Webcam Styling square*/
  #webcam {
-    width: 80%;
+    width: 100%;
     aspect-ratio: 1 / 1; 
     object-fit: cover; /* Ensures square cropping */
     transform: scaleX(-1); /* Start mirrored */
@@ -360,7 +360,7 @@ textarea {
         <button onclick="refreshCameraList()">🔄 Refresh List</button>
         <button onclick="toggleMirror()">🔄 Mirror Video</button> <!-- Mirror Button -->
         <br>                
-        
+        <br><br>
         <video id="webcam" autoplay playsinline></video>
         <canvas id="mirrorCanvas" hidden></canvas>
         <br>
@@ -440,9 +440,9 @@ textarea {
         <br>
         <div id="instructionsText6"><i></i></div>
         <div id="selectButtons">
-        <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_i2ied6JsmUD3','_blank')">Demo code USB</button>
-        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_JeYeWD9KTfH5','_blank')">Demo code Bluetooth</button>
-        <button id="connectButtonBTYOLO">Reserveløsning: Ufiltrert Bluetooth</button>
+        <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_i2ied6JsmUD3','_blank')">Kode-eksempel USB</button>
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:17707-09335-73148-04499','_blank')">Kode-eksempel Bluetooth</button>
+        <button id="connectButtonBTYOLO">Reservetilkobling: Ufiltrert Bluetooth</button>
         </div>
         <h3>v3.1 - 19.01.26</h3>
     </div>
@@ -803,7 +803,7 @@ document.getElementById("connectButtonBTYOLO").addEventListener("click", async (
         microbitDevice = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true, // Allow any Bluetooth device, no filters
             //filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
-           // optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
+            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
         });
         
         console.log("Connecting to GATT Server...");
@@ -1088,8 +1088,8 @@ const translations = {
         instructionsText2: "2) Last inn modellen ved å dra og slippe .zip-filen inn på denne siden, eller klikk på det grønne feltet under for å lete.",
         instructionsText3: "3) Trykk en av Koble til-knappene, og velg riktig enhet i vinduet som dukker opp (NB! Bruk Chrome eller Edge.).",
         instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over USB eller Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
-        instructionsText5: "Hvis noe går i stykker, kan du trykke F12 og sjekke konsollet for feilmeldinger og logg. ",
-        instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no"
+        instructionsText5: "BLUETOOTH: Dersom micro:biten ikke vises i det hele tatt, prøv å laste inn eksempel-koden under og last inn siden på nytt. Om det fortsatt ikke fungerer, åpne Bluetooth-instillinger på maskinen og fjern, og så legg til micro:biten på nytt.",
+        instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no. Takk til Inspiria Science Center for innspill!"
     }
 };        
 
