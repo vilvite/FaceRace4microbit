@@ -442,8 +442,9 @@ textarea {
         <div id="selectButtons">
         <button id="demoLink" onclick=" window.open('https://makecode.microbit.org/#pub:_i2ied6JsmUD3','_blank')">Demo code USB</button>
         <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_JeYeWD9KTfH5','_blank')">Demo code Bluetooth</button>
+        <button id="connectButtonBTYOLO">Reserveløsning: Ufiltrert Bluetooth</button>
         </div>
-        <h3>v3.0 - 19.01.26</h3>
+        <h3>v3.1 - 19.01.26</h3>
     </div>
 </div>
 
@@ -793,6 +794,42 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
         //document.getElementById("connectButtonBT").innerText = "Error!";
     }
 });
+
+
+// legger til en testknapp for ufiltrert tilkobling. Hvem vet, kanskje funker det?
+document.getElementById("connectButtonBTYOLO").addEventListener("click", async () => {
+    try {
+        console.log("Requesting micro:bit Bluetooth device...");
+        microbitDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true, // Allow any Bluetooth device, no filters
+            //filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
+           // optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
+        });
+        
+        console.log("Connecting to GATT Server...");
+        //document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
+        microbitServer = await microbitDevice.gatt.connect();
+        console.log("Awaiting Primary Service");
+        //document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
+        microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        
+        console.log("Finding TX Characteristic...");
+        //document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
+        
+        //console.log("Connected to micro:bit via Bluetooth");
+        console.log("Connected to", microbitDevice.name, " via Bluetooth");
+        connectedBT = true;
+        document.getElementById('connectButton').disabled = true;
+        connectButtonBT.classList.remove("flash-red");
+        //document.getElementById("connectButtonBT").innerText = "Connected";
+    } catch (log) {
+        console.log("Bluetooth connection failed, ", log);
+        
+        //document.getElementById("connectButtonBT").innerText = "Error!";
+    }
+});
+
 
 
 //more fancy sendDataToMicroBit(BT)
