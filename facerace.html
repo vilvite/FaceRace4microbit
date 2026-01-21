@@ -483,7 +483,7 @@ textarea {
             <!-- Confidence Threshold Slider -->
             <div class="text-block" id="thresholdContainer">
                 <label for="threshold">Confidence threshold</label>
-                <input type="range" id="threshold" min="0" max="100" step="5" value="50">
+                <input type="range" id="threshold" min="0" max="100" step="4" value="68"> <!-- Fordi jeg syns det er kjempemorsomt at det da akkurat ikke går an å sette den til 67 eller 69 -->
                 <span id="thresholdValue">50</span>%
             </div>
 
@@ -984,8 +984,10 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
         // ⭐ Lagt til i 3.5
         microbitDevice.addEventListener("gattserverdisconnected", () => {
             console.warn("🔌 Bluetooth disconnected");
+            console.error("🔌 Connection lost");
             connectedBT = false;
             microbitCharacteristic = null;
+            handleBluetoothDisconnected();
             resetBluetoothSendState();
         });
 
