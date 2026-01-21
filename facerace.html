@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>KI Kart Interface v3.4</title>
+    <title>KI Kart Interface v3.5</title>
 
 
 <!-- █████████████████████████████████████████████████████████████████████████ -->
@@ -512,7 +512,7 @@ textarea {
     <br>
     <br>
 
-    <h3>v3.4 - 21.01.26</h3>
+    <h3>v3.5 - 21.01.26</h3>
     </div>
 </div>
 
@@ -971,6 +971,8 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
     if (microbitDevice?.gatt?.connected) {  //koble fra gamle koblinger for å hindre at listen tømmes
         microbitDevice.gatt.disconnect();
     } 
+
+        resetBluetoothSendState();  // ⭐ critical, wow GPT dette ser seriøst ut. Emoji og greier.
     try {
         console.log("Requesting micro:bit Bluetooth device...");
         microbitDevice = await navigator.bluetooth.requestDevice({
@@ -979,6 +981,15 @@ document.getElementById("connectButtonBT").addEventListener("click", async () =>
             optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
         });
         
+        // ⭐ Lagt til i 3.5
+        microbitDevice.addEventListener("gattserverdisconnected", () => {
+            console.warn("🔌 Bluetooth disconnected");
+            connectedBT = false;
+            microbitCharacteristic = null;
+            resetBluetoothSendState();
+        });
+
+
         console.log("Connecting to GATT Server...");
         microbitServer = await microbitDevice.gatt.connect();
         console.log("Awaiting Primary Service");
@@ -1127,6 +1138,16 @@ async function processBTSendQueue() {
 
     processBTSendQueue();
 }
+
+// trengte også en funksjon for å tømme køen når man mister tilkobling
+
+function resetBluetoothSendState() {
+    btSendQueue.length = 0;          // clear queue
+    btSendingInProgress = false;     // release lock
+}
+
+
+
 
 
 /* Dette er den gamle, bytter ut med ny som skal fikse kø
