@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>KI Kart Interface v3.3</title>
+    <title>KI Kart Interface v3.4</title>
 
 
 <!-- █████████████████████████████████████████████████████████████████████████ -->
@@ -512,7 +512,7 @@ textarea {
     <br>
     <br>
 
-    <h3>v3.3 - 20.01.26</h3>
+    <h3>v3.4 - 21.01.26</h3>
     </div>
 </div>
 
@@ -561,6 +561,8 @@ let microbitServer;
 let microbitService;
 let microbitCharacteristic;
 
+const btSendQueue = [];
+let btSendingInProgress = false;
 
 
 
@@ -967,10 +969,8 @@ document.getElementById("connectButton").addEventListener("click", async () => {
 document.getElementById("connectButtonBT").addEventListener("click", async () => {
     
     if (microbitDevice?.gatt?.connected) {  //koble fra gamle koblinger for å hindre at listen tømmes
-    microbitDevice.gatt.disconnect();
-}
-
-    
+        microbitDevice.gatt.disconnect();
+    } 
     try {
         console.log("Requesting micro:bit Bluetooth device...");
         microbitDevice = await navigator.bluetooth.requestDevice({
@@ -1008,7 +1008,7 @@ window.addEventListener("beforeunload", () => {
 
 function handleBluetoothDisconnected() { // Trekker brukerens oppmerksomhet diskrét mot tilkoblingsknappen om micro:biten mister kontakt.
     if (!connectButtonBT) return;
-document.getElementById('connectButton').disabled = false;
+    document.getElementById('connectButton').disabled = false;
     connectButtonBT.classList.add("flash-red");
 }
 
@@ -1018,38 +1018,30 @@ document.getElementById('connectButton').disabled = false;
 document.getElementById("connectButtonBTYOLO").addEventListener("click", async () => {
 
      if (microbitDevice?.gatt?.connected) {  //koble fra gamle koblinger for å hindre at listen tømmes
-    microbitDevice.gatt.disconnect();
+        microbitDevice.gatt.disconnect();
 }
     try {
         console.log("Requesting micro:bit Bluetooth device...");
         microbitDevice = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true, // Allow any Bluetooth device, no filters
+            acceptAllDevices: true, // Allow any Bluetooth device, no filters 
             //filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
             optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
         });
         
         console.log("Connecting to GATT Server...");
-        //document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
         microbitServer = await microbitDevice.gatt.connect();
         console.log("Awaiting Primary Service");
-        //document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
         microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-        
         console.log("Finding TX Characteristic...");
-        //document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
-        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
-        
-        //console.log("Connected to micro:bit via Bluetooth");
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett 
         console.log("Connected to", microbitDevice.name, " via Bluetooth");
         connectedBT = true;
         document.getElementById('connectButton').disabled = true;
         connectButtonBT.classList.remove("flash-red");
-        //document.getElementById("connectButtonBT").innerText = "Connected";
-    } catch (log) {
+        } catch (log) {
         console.log("Bluetooth connection failed, ", log);
         
-        //document.getElementById("connectButtonBT").innerText = "Error!";
-    }
+        }
 });
 
 // Send data over serial
@@ -1071,6 +1063,73 @@ async function sendDataToMicrobitUSB(signal) {
     }
 }
 
+// Ny funksjon, sender signalene i kø så man kan prøve på nytt om noe går poff
+async function sendDataToMicrobitBT(signal) {
+    if (!microbitCharacteristic) {
+        console.error("❌ No BT connection thingy available to send data");
+        return;
+    }
+
+    const signalToSend = convertToASCIICompatible(signal) + "\n";
+    btSendQueue.push(signalToSend);
+
+    if (!btSendingInProgress) {
+        processBTSendQueue();
+    }
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Ny funksjon for å sende signalene i kø og orden
+
+async function processBTSendQueue() {
+    if (btSendQueue.length === 0) {
+        btSendingInProgress = false;
+        showEmojiBurst();
+        return;
+    }
+
+    btSendingInProgress = true;
+    const message = btSendQueue[0]; // don’t remove yet
+
+    try {
+        console.log("📡 Sending:", message.trim());
+        const data = new TextEncoder().encode(message);
+        await microbitCharacteristic.writeValue(data);
+
+        // success → remove message
+        btSendQueue.shift();
+
+        // small pause improves micro:bit stability
+        await delay(20);
+
+    } catch (error) {
+        if (
+            error.name === "NetworkError" &&
+            error.message.includes("GATT operation already in progress")
+        ) {
+            // BLE stack busy → retry same message shortly
+            await delay(40);
+        } else if (
+            error.name === "NetworkError" &&
+            error.message.includes("GATT Server is disconnected")
+        ) {
+            handleBluetoothDisconnected();
+            return;
+        } else {
+            console.error("❌ Error sending data:", error);
+            // drop the message to avoid deadlock
+            btSendQueue.shift();
+        }
+    }
+
+    processBTSendQueue();
+}
+
+
+/* Dette er den gamle, bytter ut med ny som skal fikse kø
 //more fancy sendDataToMicroBit(BT)
 async function sendDataToMicrobitBT(signal) {
     if (!microbitCharacteristic) {
@@ -1099,7 +1158,7 @@ async function sendDataToMicrobitBT(signal) {
 }
     
 
-
+*/
 
 /*
 // copypaste fra test-eksempel, tar vare på for referanse
@@ -1275,7 +1334,7 @@ const translations = {
         instructionsText2: "2) Last inn modellen ved å dra og slippe .zip-filen inn på denne siden, eller klikk på det grønne feltet under for å lete.",
         instructionsText3: "3) Trykk en av Koble til-knappene, og velg riktig enhet i vinduet som dukker opp (NB! Bruk Chrome eller Edge.).",
         instructionsText4: "micro:biten din skal nå motta Klasse-navnene som signaler over USB eller Blåtann! Still inn Terskel-bryteren til ønsket skråsikkerhet. ",
-        instructionsText5: "BLUETOOTH: Dersom micro:biten ikke vises i det hele tatt, prøv å laste inn eksempel-koden under og last inn siden på nytt. Om det fortsatt ikke fungerer, åpne Bluetooth-instillinger på maskinen og fjern, og så legg til micro:biten på nytt.",
+        instructionsText5: "BLUETOOTH: Dersom micro:biten ikke vises i det hele tatt, prøv å skru den av i 2 sekunder og last inn siden på nytt. Så kan du prøve å laste inn eksempel-koden under. Sjekk og at micro:biten IKKE er pairet med enheten din. Du kan og teste Ufiltrert Tilkobling-knappen under og se om den dukker opp der.",
         instructionsText6: "Inspirert av Steamlabs make: AI Robots. Spørsmål, forslag eller kommentarer? Ikke nøl med å sende meg en epost på ah@vilvite.no. Takk til Inspiria Science Center for innspill!"
     }
 };        
