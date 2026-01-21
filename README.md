@@ -6,6 +6,9 @@ https://vilvite.github.io/FaceRace4microbit/facerace.html
 
 Testing log in Norwegian for my colleagues:
 
+V 3.4 - 21.01.26
+Mange små gode fikser på rappen. Løste problemene med BT! Man skal IKKE pare micro:biten med enheten man sitter på, men heller endre inne i MakeCode at det ikke kreves paring. Har og pyntet og ryddet på koden, og lagt til en køordning så man ikke mister viktige signaler. Har og formattert siden så den fungerer på mobiltelefon.
+
 V 3.1 - 19.1.26
 Laget en ekstra knapp for å koble til Bluetooth uten filter, for å se om dette hjelper på de mystiske micro:bitene som forsvinner
 
