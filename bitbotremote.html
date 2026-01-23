@@ -4,18 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V0.2</title>
-    <style>
-        body {
-    font-family: Arial, sans-serif;
+    <title>BitBotRemote V1.0</title>
+
+
+
+<!--  _____                                              _____  -->
+<!-- ( ___ )--------------------------------------------( ___ ) -->
+<!--  |   |                                              |   |  -->
+<!--  |   |                                              |   |  -->
+<!--  |   |    ____ ____ ____        _             _     |   |  -->
+<!--  |   |   / ___/ ___/ ___|   ___| |_ __ _ _ __| |_   |   |  -->
+<!--  |   |  | |   \___ \___ \  / __| __/ _` | '__| __|  |   |  -->
+<!--  |   |  | |___ ___) |__) | \__ \ || (_| | |  | |_   |   |  -->
+<!--  |   |   \____|____/____/  |___/\__\__,_|_|   \__|  |   |  -->
+<!--  |   |                                              |   |  -->
+<!--  |___|                                              |___|  -->
+<!-- (_____)--------------------------------------------(_____) -->
+
+
+
+<style>
+        
+body {
+    font-family: Verdana, sans-serif; /*  */
     text-align: center;
     margin: 0;
     padding: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+    
     
 }
+
+/* Title bar */
+#title {
+    text-align: center;
+    padding: 16px;
+    margin: 0;
+}
+
+/* Flex container ONLY for left/right */
+#container {
+    display: flex;
+    flex-direction: row; /* desktop layout */
+    min-height: calc(100vh - 64px); /* optional */
+}
+
+#left, #right {
+    padding: 20px;
+    text-align: left;
+}
+
+#left {
+    flex: 1;
+}
+
+#right {
+    flex: 2;
+}
+
+/*Yay, denne gjør siden penere på mobil*/
+@media (max-width: 768px) {
+    #container {
+        flex-direction: column;
+    }
+
+    #left,
+    #right {
+        width: 100%;
+    }
+}
+
 
 body::before {
     content: "";
@@ -31,36 +88,6 @@ body::before {
     z-index: -1; /* Push it behind all content */
     
 }
-
-#container {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 20px;
-    height: 90%;
-}
-
-/* Zones */
-#left, #right, #center {
-    padding: 20px;
-}
-
-#left {
-    flex: 2;  /* Takes more space */
-    text-align: left;
-}
-
-#center {
-    flex: 1; /* Takes equal width */
-    text-align: center;
-}
-
-#right {
-    flex: 1;
-    text-align: left;
-}
-
-
 
 /* Gradient Background */
 body::after {
@@ -111,6 +138,22 @@ body::after {
 }
 
 
+/*Dette får "Koble til Bluetooth"-knappen til å gløde om man mister kontakt med micro:biten. KAN legge til en auto-reconnect-funsksjon, men dette er gøyere.*/
+
+    .flash-red {
+        animation: flashRed 0.8s infinite;
+    }
+
+    @keyframes flashRed {
+        0%   { background-color: red; }
+        50%  { background-color: transparent; }
+        100% { background-color: red; }
+    }
+
+
+
+
+
 /* Joystick Container */
 .joystick-container {
             position: relative;
@@ -143,7 +186,7 @@ body::after {
             font-weight: bold;
         }
 
-        /*Fancy color stuff */
+/*Fancy color stuff */
         body { text-align: center; font-family: Arial, sans-serif; }
         .color-wheel-container { position: relative; display: inline-block; }
         .crosshair {
@@ -171,9 +214,31 @@ body::after {
 
     </style>
 </head>
+
+
+
+<!--  _____                                                        _____  -->
+<!-- ( ___ )------------------------------------------------------( ___ ) -->
+<!--  |   |                                                        |   |  -->
+<!--  |   |                                                        |   |  -->
+<!--  |   |   _   _ _____ __  __ _       ____            _         |   |  -->
+<!--  |   |  | | | |_   _|  \/  | |     | __ )  ___   __| |_   _   |   |  -->
+<!--  |   |  | |_| | | | | |\/| | |     |  _ \ / _ \ / _` | | | |  |   |  -->
+<!--  |   |  |  _  | | | | |  | | |___  | |_) | (_) | (_| | |_| |  |   |  -->
+<!--  |   |  |_| |_| |_| |_|  |_|_____| |____/ \___/ \__,_|\__, |  |   |  -->
+<!--  |   |                                                |___/   |   |  -->
+<!--  |   |                                                        |   |  -->
+<!--  |___|                                                        |___|  -->
+<!-- (_____)------------------------------------------------------(_____) -->
+
+
+
 <body>
 
-<h1>BitBotRemote!</h1>
+
+
+
+<h1 id="title">BitBotRemote!</h1>
 <!--<div class="fixed-image"></div>-->
 
 
@@ -196,7 +261,7 @@ body::after {
         <button id="stopButton"onclick="emergencySTOP()">🛑</button>
         
     </div>
-    <div id="center">
+    <div id="right">
         <div class="color-wheel-container">
             <canvas id="color-wheel" width="200" height="200"></canvas>
             <div id="crosshair" class="crosshair"></div>
@@ -206,27 +271,267 @@ body::after {
         <br>
         <br>
         <button id="unicornMode" onclick="unicornPower()">✨🦄✨</button> 
-    </div>
+    
+ 
+        
+        
+        
 
-    <div id="right">
-        
-        
-        
-        <!-- <button id="pairingButton">Pair Bluetooth</button> for testing-->
         <button id="connectButtonBT">Connect to Micro:bit Bluetooth</button>
         <br>
         <!--<button id="connectButton">Connect to Micro:bit USB serial</button>-->
         <br>        
-        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_UvK7FURLC48i','_blank')">Demo code Bluetooth</button>
+        <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_4hgd3eHuzW7U','_blank')">Demo code Bluetooth</button>
         <br>        
-        <!--<button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_Yvsi0M1vV29c','_blank')">Demo code USB</button>-->
+        <!--<button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_08sctr4dk0pf','_blank')">Demo code USB</button>-->
+<!-- SUPER DUPER HANDY INFORMASJONSLOGG!  -->
+        <h2>Status</h2> 
+        <div id="output" style="background-color: black; color: white; padding: 10px; font-family: monospace; height: 100px; overflow-y: scroll;"></div> 
+
+
     </div>
+
+
+    
 </div>
 
 
 <script>
 
-//Joystick stuff here
+
+
+
+
+
+
+//  _____                                                              _____ 
+// ( ___ )------------------------------------------------------------( ___ )
+//  |   |                                                              |   | 
+//  |   |                                                              |   | 
+//  |   |   ____   ____ ____  ___ ____ _____       _             _     |   | 
+//  |   |  / ___| / ___|  _ \|_ _|  _ \_   _|  ___| |_ __ _ _ __| |_   |   | 
+//  |   |  \___ \| |   | |_) || || |_) || |   / __| __/ _` | '__| __|  |   | 
+//  |   |   ___) | |___|  _ < | ||  __/ | |   \__ \ || (_| | |  | |_   |   | 
+//  |   |  |____/ \____|_| \_\___|_|    |_|   |___/\__\__,_|_|   \__|  |   | 
+//  |   |                                                              |   | 
+//  |___|                                                              |___| 
+// (_____)------------------------------------------------------------(_____)
+
+
+
+
+
+
+// ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
+// ▐                                               ▌
+// ▐  ____  _            _              _   _      ▌
+// ▐ | __ )| |_   _  ___| |_ ___   ___ | |_| |__   ▌
+// ▐ |  _ \| | | | |/ _ \ __/ _ \ / _ \| __| '_ \  ▌
+// ▐ | |_) | | |_| |  __/ || (_) | (_) | |_| | | | ▌
+// ▐ |____/|_|\__,_|\___|\__\___/ \___/ \__|_| |_| ▌
+// ▐                                               ▌
+// ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
+
+
+
+
+//BT stuff here
+let connectedUSB = false; 
+let connectedBT = false; 
+let microbitDevice;
+let microbitServer;
+let microbitService;
+let microbitCharacteristic;
+
+const btSendQueue = [];
+let btSendingInProgress = false;
+
+
+// Convert non-ASCII characters - skandinaviske tegn funker ikke på serieport
+function convertToASCIICompatible(str) {
+    const replacements = {
+        'Æ': 'AE', 'Ø': 'OE', 'Å': 'AA',
+        'æ': 'ae', 'ø': 'oe', 'å': 'aa',
+    };
+    return str.split('').map(char => replacements[char] || char).join('');
+}
+
+
+
+
+
+
+document.getElementById("connectButtonBT").addEventListener("click", async () => {
+    
+    if (microbitDevice?.gatt?.connected) {  //koble fra gamle koblinger for å hindre at listen tømmes
+        microbitDevice.gatt.disconnect();
+    } 
+
+        resetBluetoothSendState();  
+    try {
+        console.log("Requesting micro:bit Bluetooth device...");
+        microbitDevice = await navigator.bluetooth.requestDevice({
+           // acceptAllDevices: true // Allow any Bluetooth device, no filters
+            filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
+            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
+        });
+        
+        
+        microbitDevice.addEventListener("gattserverdisconnected", () => {
+            console.warn("🔌 Bluetooth disconnected");
+            console.error("🔌 Connection lost");
+            connectedBT = false;
+            microbitCharacteristic = null;
+            handleBluetoothDisconnected();
+            resetBluetoothSendState();
+        });
+
+
+        console.log("Connecting to GATT Server...");
+        microbitServer = await microbitDevice.gatt.connect();
+        console.log("Awaiting Primary Service");
+        microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        console.log("Finding TX Characteristic...");
+        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
+        console.log("Connected to", microbitDevice.name, " via Bluetooth");
+        connectedBT = true;
+        connectButtonBT.classList.remove("flash-red");
+        
+    } catch (log) {
+        console.log("Bluetooth connection failed, ", log);
+        
+        
+    }
+});
+
+
+// legger til funksjon for å stenge tilkoblinger, dette var siste puslebrikke for å få BT til å bli stabil <3
+window.addEventListener("beforeunload", () => {
+    if (microbitDevice?.gatt?.connected) {
+        microbitDevice.gatt.disconnect();
+    }
+});
+
+
+function handleBluetoothDisconnected() { // Trekker brukerens oppmerksomhet diskrét mot tilkoblingsknappen om micro:biten mister kontakt.
+    if (!connectButtonBT) return;
+    connectButtonBT.classList.add("flash-red");
+}
+
+
+
+// Send data over serial
+async function sendDataToMicrobitUSB(signal) {
+    if (!writer) {
+        console.error("❌ No writer available to send data.");
+        return;
+    }
+    try {
+        const signalToSend = convertToASCIICompatible(signal);
+        console.log("📡 Sending:", signalToSend);
+        for (let i = 0; i < signalToSend.length; i++) {
+            const byte = new TextEncoder().encode(signalToSend[i]);
+            await writer.write(byte);
+        }
+        
+    } catch (error) {
+        console.error("❌ Error sending data:", error);
+    }
+}
+
+// Ny funksjon, sender signalene i kø så man kan prøve på nytt om noe går poff
+async function sendDataToMicrobitBT(signal) {
+    if (!microbitCharacteristic) {
+        console.error("❌ No BT connection thingy available to send data");
+        return;
+    }
+
+    const signalToSend = convertToASCIICompatible(signal) + "\n";
+    btSendQueue.push(signalToSend);
+
+    if (!btSendingInProgress) {
+        processBTSendQueue();
+    }
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Ny funksjon for å sende signalene i kø og orden
+
+async function processBTSendQueue() {
+    if (btSendQueue.length === 0) {
+        btSendingInProgress = false;
+        
+        return;
+    }
+
+    btSendingInProgress = true;
+    const message = btSendQueue[0]; // don’t remove yet
+
+    try {
+        console.log("📡 Sending:", message.trim());
+        const data = new TextEncoder().encode(message);
+        await microbitCharacteristic.writeValue(data);
+
+        // success → remove message
+        btSendQueue.shift();
+
+        // small pause improves micro:bit stability
+        await delay(20);
+
+    } catch (error) {
+        if (
+            error.name === "NetworkError" &&
+            error.message.includes("GATT operation already in progress")
+        ) {
+            // BLE stack busy → retry same message shortly
+            await delay(40);
+        } else if (
+            error.name === "NetworkError" &&
+            error.message.includes("GATT Server is disconnected")
+        ) {
+            handleBluetoothDisconnected();
+            return;
+        } else {
+            console.error("❌ Error sending data:", error);
+            // drop the message to avoid deadlock
+            btSendQueue.shift();
+        }
+    }
+
+    processBTSendQueue();
+}
+
+// trengte også en funksjon for å tømme køen når man mister tilkobling
+
+function resetBluetoothSendState() {
+    btSendQueue.length = 0;          // clear queue
+    btSendingInProgress = false;     // release lock
+}
+
+
+
+
+
+
+
+// ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
+// ▐                                         ▌
+// ▐      _                 _   _      _     ▌
+// ▐     | | ___  _   _ ___| |_(_) ___| | __ ▌
+// ▐  _  | |/ _ \| | | / __| __| |/ __| |/ / ▌
+// ▐ | |_| | (_) | |_| \__ \ |_| | (__|   <  ▌
+// ▐  \___/ \___/ \__, |___/\__|_|\___|_|\_\ ▌
+// ▐              |___/                      ▌
+// ▐                                         ▌
+// ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
+
+
+
+
+
 const joystick = document.getElementById("joystick");
 const container = document.getElementById("joystickContainer");
 const displayValues = document.getElementById("joystickValues");
@@ -307,7 +612,7 @@ joystick.addEventListener("touchstart", (e) => {
 function logJoystickValues() {
     
     if ((joystickX + joystickX) == 0) {
-        console.error("🥽 Chilling");
+        //console.log("🥽 Chilling");
         return;
     }
     {
@@ -321,11 +626,13 @@ function logJoystickValues() {
 
 function emergencySTOP() {
             if (connectedBT) sendDataToMicrobitBT(`STOP\n`); 
+            console.log("BT send 🛑 STOP");
             if (connectedUSB) sendDataToMicrobitUSB(`STOP\n`); 
         }
 
         function honk() {
             if (connectedBT) sendDataToMicrobitBT(`HONK\n`); 
+            console.log("BT send 📯 HONK");
             if (connectedUSB) sendDataToMicrobitUSB(`HONK\n`); 
         }
 
@@ -333,7 +640,18 @@ function emergencySTOP() {
 
 
 
-// Fancy RGB stuff here
+
+// ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
+// ▐                                             ▌
+// ▐  ____   ____ ____        _          __  __  ▌
+// ▐ |  _ \ / ___| __ )   ___| |_ _   _ / _|/ _| ▌
+// ▐ | |_) | |  _|  _ \  / __| __| | | | |_| |_  ▌
+// ▐ |  _ <| |_| | |_) | \__ \ |_| |_| |  _|  _| ▌
+// ▐ |_| \_\\____|____/  |___/\__|\__,_|_| |_|   ▌
+// ▐                                             ▌
+// ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
+
+
 
 const canvas = document.getElementById('color-wheel');
         const ctx = canvas.getContext('2d');
@@ -438,181 +756,62 @@ setInterval(logJoystickValues, 200);
 
 
 
+// Console log stuff here. Tungvint å måtte trykke på F12 for å se etter feil, spesielt siden Fn-lock gjør det til russisk rulett om man skrur PCen i dvale eller ikke.
+const outputElement = document.getElementById("output");
 
-
-
-
-
-
-//BT stuff here
-let connectedUSB = false; 
-let connectedBT = false; 
-let microbitDevice;
-let microbitServer;
-let microbitService;
-let microbitCharacteristic;
-
-
-
-
-// Convert non-ASCII characters - skandinaviske tegn funker ikke på serieport
-function convertToASCIICompatible(str) {
-    const replacements = {
-        'Æ': 'AE', 'Ø': 'OE', 'Å': 'AA',
-        'æ': 'ae', 'ø': 'oe', 'å': 'aa',
-    };
-    return str.split('').map(char => replacements[char] || char).join('');
-}
-
-/*
-
-// Connect to Micro:bit over serial
-document.getElementById("connectButton").addEventListener("click", async () => {
-    try {
-        document.getElementById("connectButton").innerText = "Requesting port...";
-        const microbit = await navigator.serial.requestPort();
-        document.getElementById("connectButton").innerText = "Awaiting connection...";
-        await microbit.open({ baudRate: 115200 });
-        writer = microbit.writable.getWriter();
-        connectedUSB = true;
-        console.log("✅ Connected to Micro:bit!");
-        document.getElementById('connectButtonBT').disabled = true;
-        document.getElementById("connectButton").innerText = "Connected";
-    } catch (error) {
-        console.error("❌ Error connecting to Micro:bit:", error);
-        document.getElementById("connectButton").innerText = "Error!";
-    }
-});
-
-/*
-// Pair with Bluetooth - testet ting med denne, tar vare på for referanse
-document.getElementById("pairingButton").addEventListener("click", async () => {
-    try {
-        console.log('Requesting Bluetooth device...');
-        const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true // Allow any Bluetooth device, no filters
-        });
-        console.log('Paired with device:', device.name || 'Unknown device');
-    } catch (error) {
-        console.error('Bluetooth pairing failed:', error);
-    }
-});
-
-*/
-
-
-
-/*connect over BT VIRKER! 
-... Men det er en liten rodeo å koble til hvis det er mye trafikk i luften.
-! iPad tillater dessverre ikke web bluetooth APIen som brukes. ;_;
-! Android må pares med enheten med A+B+Reset, så må man resette litt til den dukker opp som "BBC micro:bit" og ikke som f.eks [ZUZAV]
-! Paring i Windows er på finspråket a hot mess! Ting går gale. Ser ut som at USB-tilkobling til PCen og paring/ikke-paring i nettleseren påvirker ting,
-  og prøver du å koble til mens windows er paret til micro:biten, smelter Chrome. Eller micro:bitten flimrer og gir 020 OUT OF MEMORY.
-   Ting jeg gjør som får ting til å til slutt virke (da micro:bit sto i PC med USB, og i strømkabel uten data)
-    1) Steng nettleser, trekk ut ledning fra mb
-    2) Åpne facerace.html, plugg i og sett mb i paringmodus
-    3) Par mb i windows, men ha "Bluetooth & other devices" åpen
-    4) Forsøk å pare mb i pairing-modus i nettleseren. Den skal dukke opp som BBC micro:bit [xxxxx]
-    5) Reset mb. Se om den dukker opp som BBC micro:bit
-    6) Hopp tilbake til Bluetooth & Other devices, be maskinen GLEMME micro:bit [xxxxx]
-    7) Forsøk å pare med "BBC micro:bit" i nettleseren.
-    8) Reset og prøv igjen til det funker? micro:biten ser ut til å portene for å lytte etter kontakter, så om det er mange BT-enheter i nærheten som hilser på,
-       gir den 020 memory error etter noen få sekunder! Anbefaler å forsøke å pare enhetene en og en på rolige dager.
-
-micro:bit V1.0 gir 020 OUT OF MEMORY error om man prøver å legge til både BitBot-biblioteket og Bluetooth. En V2 klarer det fint. Bluetooth-biblioteket tar stor plass! 
-Kitronik MOVE er ukompatibel med Bluetooth.
-
-Anbefaler BT på Android (telefon, for å flexe) og USB på PC. Face Race var tenkt med USB-seriell til micro:bit som radio-kobler til en annen micro:bit i en BitBot.
-
-*/
-document.getElementById("connectButtonBT").addEventListener("click", async () => {
-    try {
-        console.log("Requesting micro:bit Bluetooth device...");
-        microbitDevice = await navigator.bluetooth.requestDevice({
-           // acceptAllDevices: true // Allow any Bluetooth device, no filters
-            filters: [{ namePrefix: "BBC micro:bit" }], // Only show micro:bit devices
-            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // Nordic UART Service (NUS)
-        });
-        
-        console.log("Connecting to GATT Server...");
-        document.getElementById("connectButtonBT").innerText = "Connecting to GATT Server";
-        microbitServer = await microbitDevice.gatt.connect();
-        document.getElementById("connectButtonBT").innerText = "Awaiting Primary Service";
-        microbitService = await microbitServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-        
-        console.log("Finding TX Characteristic...");
-        document.getElementById("connectButtonBT").innerText = "Finding TX Characteristic";
-        microbitCharacteristic = await microbitService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // TX characteristic, chatGPT mente først at RX var rett
-        
-        console.log("Connected to micro:bit via Bluetooth");
-        connectedBT = true;
-        
-        document.getElementById("connectButtonBT").innerText = "Connected";
-    } catch (error) {
-        console.error("Bluetooth connection failed", error);
-        document.getElementById("connectButtonBT").innerText = "Error!";
-    }
-});
-
-
-//more fancy sendDataToMicroBit(BT)
-async function sendDataToMicrobitBT(signal) {
-    if (!microbitCharacteristic) {
-        console.error("❌ No BT connection thingy available to send data");
-        return;
-    }
-    try {
-        const signalToSend = convertToASCIICompatible(signal);
-        console.log("📡 Sending:", signalToSend);
-        for (let i = 0; i < signalToSend.length; i++) {
-            const byte = new TextEncoder().encode(signalToSend[i]);
-            await microbitCharacteristic.writeValue(byte);
+        // 1. Unified function to handle different log levels
+        function addToOutput(message, type = 'log') {
+            const entry = document.createElement('div');
+            entry.className = `log-msg log-${type}`;
+            
+            // Format: [TIMESTAMP] [TYPE] Message
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+            
+            outputElement.appendChild(entry);
+            outputElement.scrollTop = outputElement.scrollHeight;
         }
-    } catch (error) {
-        console.error("❌ Error sending data:", error);
-    }
-}
-    
+
+        // 2. Capture standard logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            addToOutput(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+
+        // 3. Capture error logs
+        const originalError = console.error;
+        console.error = function(...args) {
+            addToOutput(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+
+        // 4. Global Listener for actual runtime crashes (e.g. syntax/reference errors)
+        window.onerror = function(msg, url, line) {
+            console.error(`${msg} (Line: ${line})`);
+            return false;
+        };
+
+
+        // Example usage (this output will now appear in the <div>)
+        console.log(`Live console log start: ${new Date().toLocaleTimeString()}`);
 
 
 
 
-// Send data over serial 
-async function sendDataToMicrobitUSB(signal) {
-    if (!writer) {
-        console.error("❌ No writer available to send data.");
-        return;
-    }
-    try {
-        const signalToSend = convertToASCIICompatible(signal);
-        console.log("📡 Sending:", signalToSend);
-        for (let i = 0; i < signalToSend.length; i++) {
-            const byte = new TextEncoder().encode(signalToSend[i]);
-            await writer.write(byte);
-        }
-    } catch (error) {
-        console.error("❌ Error sending data:", error);
-    }
-}
 
-/*
-// copypaste fra test-eksempel, tar vare på for referanse
-document.getElementById('sendButton').addEventListener('click', async () => {
-    if (!microbitCharacteristic) {
-        alert("Not connected to micro:bit");
-        return;
-    }
-    const message = "HELLO\n"; // Ensure newline is included
-    try {
-        console.log("Sending:", message);
-        await microbitCharacteristic.writeValue(new TextEncoder().encode(message));
-        console.log("Message sent: HELLO");
-    } catch (error) {
-        console.error("Failed to send message", error);
-    }
-});
 
-*/
+
+// ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
+// ▐                         ▌
+// ▐      _             _    ▌
+// ▐  ___| |_ __ _ _ __| |_  ▌
+// ▐ / __| __/ _` | '__| __| ▌
+// ▐ \__ \ || (_| | |  | |_  ▌
+// ▐ |___/\__\__,_|_|   \__| ▌
+// ▐                         ▌
+// ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
+
 
 
 
