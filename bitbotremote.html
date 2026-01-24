@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.2</title>
+    <title>BitBotRemote V1.3</title>
 
 
-<!-- TO DO:                                                     -->
-<!-- Fikse joysticken så den ikke roter når vinduet resizes     -->
-<!-- Fikse knappene så de legger seg nederst på mobil           -->
-<!-- Ønske: Funksjon for å dynamisk legge til nye knapper       -->
+
 <!--  _____                                              _____  -->
 <!-- ( ___ )--------------------------------------------( ___ ) -->
 <!--  |   |                                              |   |  -->
@@ -27,7 +24,17 @@
 
 
 <style>
-        
+
+    /* Color Variables, påvirker fargene på slideren. Overflødig mange, kopierte fra Facerace-prosjektet */
+:root {
+            --primary-color:   #12d633  ;
+            --secondary-color:  #000000   ;
+            --tertiary-color:   #4075ff   ;
+            --quaternary-color:   #ffe000    ;
+            --quinary-color:  #f2784b   ;
+}
+
+
 body {
     font-family: Verdana, sans-serif; /*  */
     /*text-align: center; */
@@ -221,6 +228,58 @@ body::after {
             background-color: #f0f0f0;
         }
 
+/*Servo sliders*/
+.servoContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.6rem auto;
+    padding: 8px;
+    width: 80%;
+    max-width: 560px;
+}
+
+/* label */
+.servoContainer label {
+    color: var(--primary-color);
+    white-space: nowrap;
+    min-width: 70px;
+}
+
+/* value readout — NO JIGGLE */
+.servoValue {
+    color: #333;
+    min-width: 40px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* range slider base */
+.servoContainer input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 14px;
+    margin: 0;
+    background: rgba(0,0,0,0.06);
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+
+/* WebKit thumb */
+.servoContainer input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: #fff;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    margin-top: -3px;
+}
 
 
     </style>
@@ -268,6 +327,20 @@ body::after {
         <!-- X and Y Display -->
         <div id="joystickValues">X: 0, Y: 0</div>
 
+        <!-- Servo sliders-->
+
+        <div class="servoContainer">
+            <label for="servo1">Servo 1</label>
+            <input type="range" id="servo1" min="0" max="180" value="90">
+            <span class="servoValue" id="servo1Value">090</span>
+        </div>
+
+        <div class="servoContainer">
+            <label for="servo2">Servo 2</label>
+            <input type="range" id="servo2" min="0" max="180" value="90">
+            <span class="servoValue" id="servo2Value">090</span>
+        </div>
+
         <!-- Small buttons -->
         <br>
         <div class="buttons left-buttons">
@@ -297,10 +370,10 @@ body::after {
         <br>        
             <button id="connectButtonBT">Connect to micro:bit Bluetooth</button>
             
-            <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_g6vUbyb1XDkD','_blank')">Demo code Bluetooth</button>
+            <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_AbJW2wbvddPR','_blank')">Demo code Bluetooth</button>
             <br>        
             <button id="connectButton">Connect to micro:bit USB</button>
-            <button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_APa2kTXqC3dC','_blank')">Demo code USB</button>
+            <button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_8qUaxXVjWMMY','_blank')">Demo code USB</button>
             
         </div>
 
@@ -375,19 +448,19 @@ function convertToASCIICompatible(str) {
 
 function emergencySTOP() {
             if (connectedBT) sendDataToMicrobitBT(`STOP\n`); 
-            console.log("BT send 🛑 STOP");
+            //console.log("BT send 🛑 STOP");
             if (connectedUSB) sendDataToMicrobitUSB(`STOP\n`); 
         }
 
         function honk() {
             if (connectedBT) sendDataToMicrobitBT(`HONK\n`); 
-            console.log("BT send 📯 HONK");
+            //console.log("BT send 📯 HONK");
             if (connectedUSB) sendDataToMicrobitUSB(`HONK\n`); 
         }
 
  function unicornPower() {
             if (connectedBT) sendDataToMicrobitBT(`UNICORN\n`); //NEIGH
-            console.log("BT send ✨🦄✨ UNICORN");
+            //console.log("BT send ✨🦄✨ UNICORN");
             if (connectedUSB) sendDataToMicrobitUSB(`UNICORN\n`); //NEIGH
         }
 
@@ -603,15 +676,12 @@ const displayValues = document.getElementById("joystickValues");
 let joystickX = 0;
 let joystickY = 0;
 
-let containerRect = container.getBoundingClientRect();
-let centerX = containerRect.width / 2;
-let centerY = containerRect.height / 2;
-
-
-
-
-
 function updateJoystickPosition(clientX, clientY) {
+    const containerRect = joystickContainer.getBoundingClientRect();
+
+    const centerX = containerRect.width / 2;
+    const centerY = containerRect.height / 2;
+
     let offsetX = clientX - containerRect.left - centerX;
     let offsetY = clientY - containerRect.top - centerY;
 
@@ -629,8 +699,9 @@ function updateJoystickPosition(clientX, clientY) {
     joystickX = Math.round((offsetX / maxDistance) * 100);
     joystickY = Math.round((offsetY / maxDistance) * 100);
 
-    displayValues.innerText = `X: ${joystickX}, Y: ${(joystickY) * -1}`; // * -1 because the enemy gate is up
+    displayValues.innerText = `X: ${joystickX}, Y: ${joystickY * -1}`;
 }
+
 
 function resetJoystick() {
     joystick.style.transform = "translate(0, 0)";
@@ -692,6 +763,79 @@ function logJoystickValues() {
 }
 
 
+// Start the interval for logging
+setInterval(logJoystickValues, 200);
+
+
+
+
+// ██████████████████████████████████████████████████████████
+// █▌                                                      ▐█
+// █▌  ____                             _          __  __  ▐█
+// █▌ / ___|  ___ _ ____   _____    ___| |_ _   _ / _|/ _| ▐█
+// █▌ \___ \ / _ \ '__\ \ / / _ \  / __| __| | | | |_| |_  ▐█
+// █▌  ___) |  __/ |   \ V / (_) | \__ \ |_| |_| |  _|  _| ▐█
+// █▌ |____/ \___|_|    \_/ \___/  |___/\__|\__,_|_| |_|   ▐█
+// █▌                                                      ▐█
+// ██████████████████████████████████████████████████████████
+
+
+let servo1Value = 90;
+let servo2Value = 90;
+
+let lastServo1Value = null;
+let lastServo2Value = null;
+
+const servo1 = document.getElementById("servo1");
+const servo2 = document.getElementById("servo2");
+
+const servo1Label = document.getElementById("servo1Value");
+const servo2Label = document.getElementById("servo2Value");
+
+// Live UI updates
+servo1.addEventListener("input", () => {
+    servo1Value = Number(servo1.value);
+    servo1Label.textContent = servo1Value;
+});
+
+servo2.addEventListener("input", () => {
+    servo2Value = Number(servo2.value);
+    servo2Label.textContent = servo2Value;
+});
+
+function logServoValues() {
+
+    // SERVO 1
+    if (servo1Value !== lastServo1Value) {
+        lastServo1Value = servo1Value;
+
+      //console.log(`SERVO1: ${servo1Value}`);
+
+        if (connectedUSB) {
+            sendDataToMicrobitUSB(`SERVO1,${servo1Value}\n`);
+        }
+        if (connectedBT) {
+            sendDataToMicrobitBT(`SERVO1,${servo1Value}\n`);
+        }
+    }
+
+    // SERVO 2
+    if (servo2Value !== lastServo2Value) {
+        lastServo2Value = servo2Value;
+
+        //console.log(`SERVO2: ${servo2Value}`);
+
+        if (connectedUSB) {
+            sendDataToMicrobitUSB(`SERVO2,${servo2Value}\n`);
+        }
+        if (connectedBT) {
+            sendDataToMicrobitBT(`SERVO2,${servo2Value}\n`);
+        }
+    }
+}
+
+// Poll every 200 ms
+setInterval(logServoValues, 200);
 
 
 
@@ -854,9 +998,6 @@ function hexToRgb(hex) {
 }
 
 
-// Start the interval for logging
-setInterval(logJoystickValues, 200);
-
 
 
 
@@ -900,9 +1041,8 @@ const outputElement = document.getElementById("output");
 
         // Example usage (this output will now appear in the <div>)
         console.log("Velkommen til den hemmelige BitBot-fjernkontrollen!")
-        console.log("USB-koden må lastes ned på 2 micro:bit, 1 som kan stå i BitBot og 1 som kobles til med USB")
-        console.log("Bluetooth-koden krever micro:bit V2.")
-        console.log("Joysticken tuller hvis du endrer størrelsen på nettleservinduet, last siden på nytt for å fikse.")
+        console.log("USB-koden må lastes ned på 2 micro:bits, 1 som kan stå i BitBot og 1 som kobles til med USB.")
+        console.log("Alternativt trenger Bluetooth-koden bare 1 micro:bit som står i BitBot, men den må være V2.")
 //        console.log(`Live console log start: ${new Date().toLocaleTimeString()}`);
 
 
@@ -941,4 +1081,6 @@ init();
 
 </script>
 </body>
+
+<!-- https://www.asciiart.eu/text-to-ascii-art for å lage gøye skriblerier-->
 </html>
