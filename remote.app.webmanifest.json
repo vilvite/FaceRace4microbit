@@ -1,18 +1,15 @@
 {
-  "lang": "no",
   "name": "BitBot Remote",
   "short_name": "BBRemote",
+  "start_url": ".",
+  "display": "standalone",
   "icons": [{
     "src": "icon/512.png",
     "sizes": "512x512",
     "type": "image/png"
   }, {
-    "src": "icon/64.png",
-    "sizes": "64x64"
-  }],
-  "scope": "/",
-  "id": "remote",
-  "display": "standalone",
-  "theme_color": "12d633",
-  "background_color": "white"
+    "src": "icon/128.png",
+    "sizes": "64x64",
+    "type": "image/png"
+  }]
 }
