@@ -2,7 +2,9 @@
 Teachable Machine webcam classifier that connects to micro:bit and sends predictions over usb serial or Bluetooth.
 
 
-https://vilvite.github.io/FaceRace4microbit/facerace.html
+[Face Race / KI Kart](https://vilvite.github.io/FaceRace4microbit/facerace.html)
+
+[BitBotRemote](https://vilvite.github.io/FaceRace4microbit/bitbotremote.html)
 
 Testing log in Norwegian for my colleagues:
 
