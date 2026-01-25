@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.3</title>
-
+    <title>BitBotRemote V1.4</title>
+    <link rel="manifest" href="/remote.app.webmanifest">
 
 
 <!--  _____                                              _____  -->
@@ -25,7 +25,7 @@
 
 <style>
 
-    /* Color Variables, påvirker fargene på slideren. Overflødig mange, kopierte fra Facerace-prosjektet */
+    /* Color Variables, påvirker fargene på stolpediagrammet og slideren. Takk til Inspiria for denne biten, kjempefin! */
 :root {
             --primary-color:   #12d633  ;
             --secondary-color:  #000000   ;
@@ -755,7 +755,7 @@ function logJoystickValues() {
         return;
     }
     {
-        console.log(`Joystick X: ${joystickX}, Y: ${(joystickY) * -1}`);
+       // console.log(`Joystick X: ${joystickX}, Y: ${(joystickY) * -1}`);
         if (connectedUSB) sendDataToMicrobitUSB(`@,${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
         if (connectedBT) sendDataToMicrobitBT(`@,${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
     }
