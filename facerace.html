@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
     <title>KI Kart Interface v3.6</title>
+    <link rel="manifest" href="facerace-manifest.json">
 
 
 <!-- █████████████████████████████████████████████████████████████████████████ -->
@@ -1431,7 +1432,11 @@ async function init() {
 init();
 
 
-
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js');
+  });
+}
 
 
 
