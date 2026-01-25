@@ -1,0 +1,15 @@
+{
+  "name": "KI Kart med Teachable Machjine",
+  "short_name": "KI Kart",
+  "start_url": "./facerace.html",
+  "display": "standalone",
+  "icons": [{
+    "src": "icon/fr512.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }, {
+    "src": "icon/fr128.png",
+    "sizes": "128x128",
+    "type": "image/png"
+  }]
+}
