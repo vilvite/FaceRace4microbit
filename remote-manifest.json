@@ -1,6 +1,6 @@
 {
-  "name": "BitBot Remote",
-  "short_name": "BBRemote",
+  "name": "VilVite's super secret 4tronix BitBot remote",
+  "short_name": "BitBot Remote",
   "start_url": "./bitbotremote.html",
   "display": "standalone",
   "icons": [{
@@ -13,5 +13,6 @@
     "type": "image/png"
   }]
 }
+
 
 
