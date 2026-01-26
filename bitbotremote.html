@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.4</title>
+    <title>BitBotRemote V1.5</title>
     <link rel="manifest" href="remote-manifest.json">
+    <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
 
 <!--  _____                                              _____  -->
@@ -25,7 +26,7 @@
 
 <style>
 
-    /* Color Variables, påvirker fargene på stolpediagrammet og slideren. Takk til Inspiria for denne biten, kjempefin! */
+    /* Color Variables, påvirker fargene på siden. Takk til Inspiria for denne biten, kjempefin! */
 :root {
             --primary-color:   #12d633  ;
             --secondary-color:  #000000   ;
@@ -120,14 +121,14 @@ body::after {
 #left button { /*De litt mindre knappene for signaler/kommandoer*/
     
     font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
-
+    color: var(--secondary-color);
     display: block;
     width: 130px;
     margin: 5px auto;
     padding: 10px;
     font-size: 20px;
     cursor: pointer;
-    border:  none;
+    border:  solid var(--primary-color);
     border-radius: 5px;
 }
 #left button:hover {
@@ -138,14 +139,14 @@ body::after {
 #right button {  /*De litt større knappene for connection osv*/
     
     font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
-
+    color: var(--secondary-color);
     display: block;
     width: 150px;
     margin: 5px auto;
     padding: 10px;
     font-size: 16px;
     cursor: pointer;
-    border: none;
+    border: solid var(--primary-color);
     border-radius: 5px;
 }
 
@@ -153,6 +154,21 @@ body::after {
 
 #right button:hover {
     background-color: #ddd;
+}
+
+
+/*Knapp som kan redigeres*/
+.macro-btn {
+    font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+    display: block;
+    width: 130px;
+    margin: 5px auto;
+    padding: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    border: 2px solid black;
+    border-radius: 5px;
+        
 }
 
 
@@ -211,7 +227,7 @@ body::after {
             position: absolute;
             width: 10px;
             height: 10px;
-            border: 2px solid white;
+            border: 2px solid black(0, 0, 0);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
@@ -223,7 +239,8 @@ body::after {
             cursor: pointer;
             display: inline-block;
             padding: 10px;
-            border: 2px solid black;
+           /* border: 2px solid rgb(0, 0, 0); */
+            border: solid var(--primary-color);
             border-radius: 5px;
             background-color: #f0f0f0;
         }
@@ -308,7 +325,7 @@ body::after {
 
 
 
-<h1 id="title">BitBotRemote!</h1>
+<h1 id="title"><i>Super Secret BitBotRemote</i></h1>
 <div id="output" style="background-color: black; color: white; padding: 10px; font-family: monospace; height: 100px; overflow-y: scroll; width: 80%; text-align: left; margin-left: 30px;"></div>
 
 
@@ -344,38 +361,49 @@ body::after {
         <!-- Small buttons -->
         <br>
         <div class="buttons left-buttons">
-            <button id="honkButton"onclick="honk()">📯</button> 
+            
+            <!-- <button id="honkButton"onclick="honk()">📯</button> -->
+            <!-- <br> -->
+            <!-- <button id="stopButton"onclick="emergencySTOP()">🛑</button> -->
+            <!-- <br> -->
+            
+            <button class="macro-btn">📯 HONK</button>
             <br>
-            <button id="stopButton"onclick="emergencySTOP()">🛑</button>
+            <button class="macro-btn">🛑 STOP</button>
             <br>
-            <button id="unicornMode" onclick="unicornPower()">✨🦄✨</button> 
+            <button class="macro-btn">Klikk for å sende signal</button>
+            <br>
+            <button class="macro-btn">Hold inne for å endre</button>
         </div>
     </div>
 
 
     <div id="right">
+        
         <div class="color-wheel-container">
             <canvas id="color-wheel" width="200" height="200"></canvas>
             <div id="crosshair" class="crosshair"></div>
         </div>
+        
         <br>
         <div id="color-display" onclick="logColor()">#FFFFFF</div> 
         <br>
-        
+        <div id="color-display" onclick="unicornPower()">✨🦄✨</div> 
+            <br>
         
         <div class="buttons right-buttons">
       
         
         
         <br>        
-            <button id="connectButtonBT">Connect to micro:bit Bluetooth</button>
+            <button id="connectButtonBT">Connect to micro:bit <b>Bluetooth</b></button>
             
-            <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_AbJW2wbvddPR','_blank')">Demo code Bluetooth</button>
+            <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_AbJW2wbvddPR','_blank')"><i>Eksempelkode Bluetooth</i></button>
             <br>        
-            <button id="connectButton">Connect to micro:bit USB</button>
-            <button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_8qUaxXVjWMMY','_blank')">Demo code USB</button>
+            <button id="connectButton">Connect to micro:bit <b>USB</b></button>
+            <button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_8qUaxXVjWMMY','_blank')"><i>Eksempelkode USB</i></button>
             <br>
-            <button id="demoLinkUSB2" onclick=" window.open('https://makecode.microbit.org/#pub:_Prc2oqbmxHWc','_blank')">Kitronik MOVE (Kun USB)</button>
+            <button id="demoLinkUSB2" onclick=" window.open('https://makecode.microbit.org/#pub:_Prc2oqbmxHWc','_blank')"><i>Kitronik MOVE (Kun USB)</i></button>
         </div>
 
     </div> 
@@ -485,7 +513,6 @@ document.getElementById("connectButton").addEventListener("click", async () => {
     }
 });
 
-/*DENNE MÅ LEGGES TIL I HOVEDPROSJEKTET*/
 
 function handleUSBDisconnect() {
     connectedUSB = false;
@@ -650,9 +677,100 @@ function resetBluetoothSendState() {
 }
 
 
+//Funksjoner for redigerbare knapper
+
+document.addEventListener("DOMContentLoaded", () => {
+    const LONG_PRESS_TIME = 600; // ms
+
+    document.querySelectorAll(".macro-btn").forEach(button => {
+        let pressTimer;
+        let longPressTriggered = false;
+
+        const startPress = (e) => {
+            longPressTriggered = false;
+
+            pressTimer = setTimeout(() => {
+                longPressTriggered = true;
+                renameButton(button);
+            }, LONG_PRESS_TIME);
+        };
+
+        const endPress = () => {
+            clearTimeout(pressTimer);
+        };
+        /*
+        // SEND on normal click Unfiltered
+        button.addEventListener("click", () => {
+            if (longPressTriggered) return;
+
+            const message = button.textContent.trim();
+            if (!message) return;
+
+            if (connectedBT) sendDataToMicrobitBT(message + "\n");
+            if (connectedUSB) sendDataToMicrobitUSB(message + "\n");
+        });
+        */
+        
+        // SEND on normal click
+        button.addEventListener("click", () => {
+            if (longPressTriggered) return;
+
+            let message = button.textContent;
+
+            // Allow ASCII + æøåÆØÅ
+            message = message.replace(
+                /[^\x20-\x7EæøåÆØÅ]/g,
+                ""
+            );
+
+            // Trim and limit length
+            message = message.trim().slice(0, 14);
+
+            if (!message) return;
+
+            if (connectedBT) sendDataToMicrobitBT(message + "\n");
+            if (connectedUSB) sendDataToMicrobitUSB(message + "\n");
+            });
 
 
+        // Mouse
+        button.addEventListener("mousedown", startPress);
+        button.addEventListener("mouseup", endPress);
+        button.addEventListener("mouseleave", endPress);
 
+        // Touch
+        button.addEventListener("touchstart", startPress);
+        button.addEventListener("touchend", endPress);
+        button.addEventListener("touchcancel", endPress);
+    });
+});
+
+
+function renameButton(button) {
+    const newName = prompt("Button name:", button.textContent);
+    if (newName !== null && newName.trim() !== "") {
+        button.textContent = newName.trim();
+    }
+}
+
+// rename med symbolfilter på navn
+/*
+function renameButton(button) {
+    let newName = prompt("Button name (max 16 ASCII chars):", button.textContent);
+    if (newName === null) return;
+
+    // Keep printable ASCII only (space to ~)
+    newName = newName.replace(/[^\x20-\x7E]/g, "");
+
+    // Trim and limit length
+    newName = newName.trim().slice(0, 16);
+
+    if (newName.length === 0) return;
+
+    button.textContent = newName;
+}
+
+*/
 
 
 // ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
@@ -941,6 +1059,8 @@ const canvas = document.getElementById('color-wheel');
     crosshair.style.left = `${x}px`;
     crosshair.style.top = `${y}px`;
     colorDisplay.textContent = lastColor;
+    colorDisplay.style.color = lastColor;
+    colorDisplay.style.borderColor = lastColor;
 }
 
 
@@ -959,7 +1079,7 @@ const canvas = document.getElementById('color-wheel');
         */
         function logColor() {
             rgbConvert = hexToRgb(lastColor); //convert hex to rgb
-            console.log('Selected Color:', rgbConvert);
+        //    console.log('Selected Color:', rgbConvert);
             if (connectedBT) sendDataToMicrobitBT(`${rgbConvert}\n`); //Last Color
             if (connectedUSB) sendDataToMicrobitUSB(`${rgbConvert}\n`); //Last Color
         }
@@ -1041,7 +1161,7 @@ const outputElement = document.getElementById("output");
 
 
         // Example usage (this output will now appear in the <div>)
-        console.log("Velkommen til den hemmelige BitBot-fjernkontrollen!")
+        console.log("Velkommen til den superhemmelige BitBot-fjernkontrollen!")
         console.log("USB-koden må lastes ned på 2 micro:bits, 1 som kan stå i BitBot og 1 som kobles til med USB.")
         console.log("Alternativt trenger Bluetooth-koden bare 1 micro:bit som står i BitBot, men den må være V2.")
 //        console.log(`Live console log start: ${new Date().toLocaleTimeString()}`);
