@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.5</title>
+    <title>BitBotRemote V1.5.2</title>
     <link rel="manifest" href="remote-manifest.json">
     <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
@@ -67,28 +67,7 @@ body {
 
 
 
-/*Yay, denne gjør siden penere på mobil*/
-@media (max-width: 768px) {
-    #container {
-        flex-direction: column;
-    }
-    
-    /* Move buttons visually below both circles */
-    .left-buttons,
-    .right-buttons {
-        order: 3;
-    }
-    #left,
-    #right {
-        width: 100%;
-        
-    }
 
-      /* Center + stack buttons nicely */
-    .buttons {
-        margin-top: 20px;
-    }
-}
 
 
 body::before {
@@ -118,13 +97,36 @@ body::after {
     z-index: -1;
 }
 
+
+/*Knapper som kan redigeres, laget i 2 omganger.*/
+.macro-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 2fr);
+    gap: 10px;
+    justify-items: center;
+    justify-content: center;
+}
+
+
+
+    .macro-btn {
+        font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+        width: 130px;
+        padding: 10px;
+        font-size: 20px;
+        cursor: pointer;
+        border: 2px solid black;
+        border-radius: 5px;
+    }
+
 #left button { /*De litt mindre knappene for signaler/kommandoer*/
     
     font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
     color: var(--secondary-color);
-    display: block;
+    
+    
     width: 130px;
-    margin: 5px auto;
+    /*margin: 5px auto;*/
     padding: 10px;
     font-size: 20px;
     cursor: pointer;
@@ -134,6 +136,9 @@ body::after {
 #left button:hover {
     background-color: #ddd;
 }
+
+
+
 
 
 #right button {  /*De litt større knappene for connection osv*/
@@ -157,19 +162,6 @@ body::after {
 }
 
 
-/*Knapp som kan redigeres*/
-.macro-btn {
-    font-family: Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
-    display: block;
-    width: 130px;
-    margin: 5px auto;
-    padding: 10px;
-    font-size: 20px;
-    cursor: pointer;
-    border: 2px solid black;
-    border-radius: 5px;
-        
-}
 
 
 /*Dette får "Koble til Bluetooth"-knappen til å gløde om man mister kontakt med micro:biten. KAN legge til en auto-reconnect-funsksjon, men dette er gøyere.*/
@@ -299,6 +291,39 @@ body::after {
 }
 
 
+/*Yay, denne gjør siden penere på mobil*/
+@media (max-width: 768px) {
+    #container {
+        flex-direction: column;
+    }
+    
+    /* Move buttons visually below both circles */
+    .left-buttons,
+    .right-buttons {
+        order: 3;
+    }
+    #left,
+    #right {
+        width: 100%;
+        
+    }
+
+      /* Center + stack buttons nicely */
+    .buttons {
+        margin-top: 20px;
+    }
+
+    .macro-buttons {
+        grid-template-columns: repeat(2, 2fr);
+    }
+}
+
+@media (max-width: 400px) {
+    .macro-buttons {
+        grid-template-columns: 1fr;
+    }
+}
+
     </style>
 </head>
 
@@ -361,19 +386,16 @@ body::after {
         <!-- Small buttons -->
         <br>
         <div class="buttons left-buttons">
-            
-            <!-- <button id="honkButton"onclick="honk()">📯</button> -->
-            <!-- <br> -->
-            <!-- <button id="stopButton"onclick="emergencySTOP()">🛑</button> -->
-            <!-- <br> -->
-            
+            <div class="macro-buttons">
             <button class="macro-btn">📯 HONK</button>
-            <br>
             <button class="macro-btn">🛑 STOP</button>
-            <br>
             <button class="macro-btn">Klikk for å sende signal</button>
-            <br>
             <button class="macro-btn">Hold inne for å endre</button>
+        </div>
+        <br>
+        <br>
+        <br>
+        <button onclick="resetMacros()"><i>Nullstill</i></button>
         </div>
     </div>
 
@@ -677,73 +699,83 @@ function resetBluetoothSendState() {
 }
 
 
-//Funksjoner for redigerbare knapper
+
+
+// ██████████████████████████████████████████████
+// █▌                                          ▐█
+// █▌  _  __                                   ▐█
+// █▌ | |/ /_ __   __ _ _ __  _ __   ___ _ __  ▐█
+// █▌ | ' /| '_ \ / _` | '_ \| '_ \ / _ \ '__| ▐█
+// █▌ | . \| | | | (_| | |_) | |_) |  __/ |    ▐█
+// █▌ |_|\_\_| |_|\__,_| .__/| .__/ \___|_|    ▐█
+// █▌                  |_|   |_|               ▐█
+// █▌                                          ▐█
+// ██████████████████████████████████████████████
+
+//Denne skal nå huske hva knappene heter.
+const STORAGE_KEY = "macroButtonNames";
 
 document.addEventListener("DOMContentLoaded", () => {
-    const LONG_PRESS_TIME = 600; // ms
+    const buttons = document.querySelectorAll(".macro-btn");
 
-    document.querySelectorAll(".macro-btn").forEach(button => {
+    // Load saved names
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    buttons.forEach((btn, index) => {
+        if (saved[index]) btn.textContent = saved[index];
+    });
+
+    buttons.forEach((button, index) => {
         let pressTimer;
         let longPressTriggered = false;
 
-        const startPress = (e) => {
+        const startPress = () => {
             longPressTriggered = false;
 
             pressTimer = setTimeout(() => {
                 longPressTriggered = true;
-                renameButton(button);
-            }, LONG_PRESS_TIME);
+                renameButton(button, index);
+            }, 600);
         };
 
         const endPress = () => {
             clearTimeout(pressTimer);
         };
-        /*
-        // SEND on normal click Unfiltered
-        button.addEventListener("click", () => {
-            if (longPressTriggered) return;
 
-            const message = button.textContent.trim();
-            if (!message) return;
-
-            if (connectedBT) sendDataToMicrobitBT(message + "\n");
-            if (connectedUSB) sendDataToMicrobitUSB(message + "\n");
-        });
-        */
-        
-        // SEND on normal click
         button.addEventListener("click", () => {
             if (longPressTriggered) return;
 
             let message = button.textContent;
-
-            // Allow ASCII + æøåÆØÅ
-            message = message.replace(
-                /[^\x20-\x7EæøåÆØÅ]/g,
-                ""
-            );
-
-            // Trim and limit length
+            message = message.replace(/[^\x20-\x7EæøåÆØÅ]/g, "");
             message = message.trim().slice(0, 14);
 
             if (!message) return;
 
             if (connectedBT) sendDataToMicrobitBT(message + "\n");
             if (connectedUSB) sendDataToMicrobitUSB(message + "\n");
-            });
+        });
 
-
-        // Mouse
         button.addEventListener("mousedown", startPress);
         button.addEventListener("mouseup", endPress);
         button.addEventListener("mouseleave", endPress);
 
-        // Touch
         button.addEventListener("touchstart", startPress);
         button.addEventListener("touchend", endPress);
         button.addEventListener("touchcancel", endPress);
     });
 });
+
+function renameButton(button, index) {
+    const newName = prompt("Button name:", button.textContent);
+    if (newName === null || newName.trim() === "") return;
+
+    button.textContent = newName;
+
+    // Save to localStorage
+    const buttons = document.querySelectorAll(".macro-btn");
+    const saved = {};
+    buttons.forEach((btn, i) => saved[i] = btn.textContent);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+}
 
 
 function renameButton(button) {
@@ -752,6 +784,13 @@ function renameButton(button) {
         button.textContent = newName.trim();
     }
 }
+
+function resetMacros() {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+}
+
+
 
 // rename med symbolfilter på navn
 /*
