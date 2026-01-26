@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.5.3</title>
+    <title>BitBotRemote V1.5.4</title>
     <link rel="manifest" href="remote-manifest.json">
     <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
@@ -716,21 +716,23 @@ function resetBluetoothSendState() {
 const STORAGE_KEY = "macroButtonNames";
 
 document.addEventListener("DOMContentLoaded", () => {
+
+    // Select all macro buttons ONCE
     const buttons = document.querySelectorAll(".macro-btn");
 
     // Load saved names
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    buttons.forEach((btn, index) => {
-        if (saved[index]) btn.textContent = saved[index];
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    buttons.forEach((btn, i) => {
+        if (saved[i]) btn.textContent = saved[i];
     });
 
+    // Add events to buttons
     buttons.forEach((button, index) => {
         let pressTimer;
         let longPressTriggered = false;
 
         const startPress = () => {
             longPressTriggered = false;
-
             pressTimer = setTimeout(() => {
                 longPressTriggered = true;
                 renameButton(button, index);
@@ -764,18 +766,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-function renameButton(button, index) {
-    const newName = prompt("Button name:", button.textContent);
-    if (newName === null || newName.trim() === "") return;
-
-    button.textContent = newName;
-
-    // Save to localStorage
-    const buttons = document.querySelectorAll(".macro-btn");
-    const saved = {};
-    buttons.forEach((btn, i) => saved[i] = btn.textContent);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-}
 
 function renameButton(button, index) {
     const newName = prompt("Button name:", button.textContent);
@@ -786,7 +776,6 @@ function renameButton(button, index) {
     // Save to localStorage
     const buttons = document.querySelectorAll(".macro-btn");
     const saved = [];
-
     buttons.forEach((btn) => saved.push(btn.textContent));
 
     try {
@@ -795,12 +784,6 @@ function renameButton(button, index) {
         console.error("LocalStorage failed:", e);
     }
 }
-
-const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-
-buttons.forEach((btn, i) => {
-    if (saved[i]) btn.textContent = saved[i];
-});
 
 
 
@@ -811,24 +794,6 @@ function resetMacros() {
 
 
 
-// rename med symbolfilter på navn
-/*
-function renameButton(button) {
-    let newName = prompt("Button name (max 16 ASCII chars):", button.textContent);
-    if (newName === null) return;
-
-    // Keep printable ASCII only (space to ~)
-    newName = newName.replace(/[^\x20-\x7E]/g, "");
-
-    // Trim and limit length
-    newName = newName.trim().slice(0, 16);
-
-    if (newName.length === 0) return;
-
-    button.textContent = newName;
-}
-
-*/
 
 
 // ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
