@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.5.2</title>
+    <title>BitBotRemote V1.5.3</title>
     <link rel="manifest" href="remote-manifest.json">
     <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
@@ -777,13 +777,32 @@ function renameButton(button, index) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
 }
 
-
-function renameButton(button) {
+function renameButton(button, index) {
     const newName = prompt("Button name:", button.textContent);
-    if (newName !== null && newName.trim() !== "") {
-        button.textContent = newName.trim();
+    if (newName === null || newName.trim() === "") return;
+
+    button.textContent = newName;
+
+    // Save to localStorage
+    const buttons = document.querySelectorAll(".macro-btn");
+    const saved = [];
+
+    buttons.forEach((btn) => saved.push(btn.textContent));
+
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    } catch (e) {
+        console.error("LocalStorage failed:", e);
     }
 }
+
+const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+buttons.forEach((btn, i) => {
+    if (saved[i]) btn.textContent = saved[i];
+});
+
+
 
 function resetMacros() {
     localStorage.removeItem(STORAGE_KEY);
