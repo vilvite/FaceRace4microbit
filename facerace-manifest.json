@@ -3,6 +3,7 @@
   "short_name": "KI Kart",
   "start_url": "./facerace.html",
   "display": "standalone",
+  "scope": "/",
   "icons": [{
     "src": "icon/fr512.png",
     "sizes": "512x512",
@@ -14,3 +15,4 @@
   }]
 
 }
+
