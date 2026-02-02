@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.5.4</title>
+    <title>BitBotRemote V1.5.5</title>
     <link rel="manifest" href="remote-manifest.json">
     <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
@@ -429,8 +429,8 @@ body::after {
         </div>
 
     </div> 
-<br
-   <h3>v1.5.4 <a href="./facerace.html"> -</a> 29.01.26</h3> 
+<br>
+    <h3>v1.5.5 <a href="./facerace.html"> -</a> 29.01.26</h3> 
 
 </div>
 
@@ -907,6 +907,65 @@ function logJoystickValues() {
 
 // Start the interval for logging
 setInterval(logJoystickValues, 200);
+
+
+//GAMEPAD kode her
+
+function updateJoystickFromAxes(axisX, axisY) {
+    const containerRect = joystickContainer.getBoundingClientRect();
+    const maxDistance = containerRect.width / 2 - 10;
+
+    const offsetX = axisX * maxDistance;
+    const offsetY = axisY * maxDistance;
+
+    joystick.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+    joystickX = Math.round(axisX * 100);
+    joystickY = Math.round(axisY * 100);
+
+    displayValues.innerText = `X: ${joystickX}, Y: ${joystickY * -1}`;
+}
+
+let activeGamepadIndex = null;
+const DEADZONE = 0.15;
+
+window.addEventListener("gamepadconnected", (e) => {
+    console.log("Gamepad connected:", e.gamepad.id);
+    activeGamepadIndex = e.gamepad.index;
+});
+
+window.addEventListener("gamepaddisconnected", () => {
+    console.log("Gamepad disconnected");
+    activeGamepadIndex = null;
+    resetJoystick();
+});
+
+function pollGamepad() {
+    if (activeGamepadIndex === null) return;
+
+    const gamepad = navigator.getGamepads()[activeGamepadIndex];
+    if (!gamepad) return;
+
+    let x = gamepad.axes[0]; // Left stick X
+    let y = gamepad.axes[1]; // Left stick Y
+
+    // Deadzone
+    if (Math.abs(x) < DEADZONE) x = 0;
+    if (Math.abs(y) < DEADZONE) y = 0;
+
+    if (x === 0 && y === 0) {
+        resetJoystick();
+    } else {
+        updateJoystickFromAxes(x, y);
+    }
+}
+
+function gamepadLoop() {
+    pollGamepad();
+    requestAnimationFrame(gamepadLoop);
+}
+
+gamepadLoop();
 
 
 
