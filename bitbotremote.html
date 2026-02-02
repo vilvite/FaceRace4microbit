@@ -248,6 +248,12 @@ body::after {
     max-width: 560px;
 }
 
+/*Input-display*/
+body[data-input="gamepad"] #joystick {
+    outline: 2px solid #d6660a;
+}
+
+
 /* label */
 .servoContainer label {
     color: var(--primary-color);
@@ -852,9 +858,11 @@ function resetJoystick() {
     displayValues.innerText = "X: 0, Y: 0";
 }
 
-
+//Ny kode, kan bytte input mellom touch/gamepad/mus
 joystick.addEventListener("mousedown", (e) => {
     e.preventDefault();
+    claimPointerInput("mouse");
+
     function moveJoystick(event) {
         updateJoystickPosition(event.clientX, event.clientY);
     }
@@ -863,6 +871,7 @@ joystick.addEventListener("mousedown", (e) => {
         document.removeEventListener("mousemove", moveJoystick);
         document.removeEventListener("mouseup", stopJoystick);
         resetJoystick();
+        activeInput = "none";
     }
 
     document.addEventListener("mousemove", moveJoystick);
@@ -871,15 +880,18 @@ joystick.addEventListener("mousedown", (e) => {
 
 joystick.addEventListener("touchstart", (e) => {
     e.preventDefault();
+    claimPointerInput("touch");
+
     function moveJoystick(event) {
-        let touch = event.touches[0];
-        updateJoystickPosition(touch.clientX, touch.clientY);
+        const t = event.touches[0];
+        updateJoystickPosition(t.clientX, t.clientY);
     }
 
     function stopJoystick() {
         document.removeEventListener("touchmove", moveJoystick);
         document.removeEventListener("touchend", stopJoystick);
         resetJoystick();
+        activeInput = "none";
     }
 
     document.addEventListener("touchmove", moveJoystick);
@@ -887,21 +899,25 @@ joystick.addEventListener("touchstart", (e) => {
 });
 
 
+
 // Stuff for steering here
 
-// Logs joystick values every 50ms
+// Fixed joystick values - Y ville ikke samarbeide
 function logJoystickValues() {
-    
-    if ((joystickX + joystickY) == 0) {
-        //console.log("🥽 Chilling");
+    if (joystickX === 0 && joystickY === 0) {
+        // console.log("🥽 Chilling");
         return;
     }
-    {
-       // console.log(`Joystick X: ${joystickX}, Y: ${(joystickY) * -1}`);
-        if (connectedUSB) sendDataToMicrobitUSB(`@,${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
-        if (connectedBT) sendDataToMicrobitBT(`@,${joystickX},${(joystickY) * -1}\n`); //Send X,Y separated by comma REMEMBER NEWLINE lol
+
+    const y = joystickY * -1;
+
+    if (connectedUSB) {
+        sendDataToMicrobitUSB(`@,${joystickX},${y}\n`);
     }
-    
+
+    if (connectedBT) {
+        sendDataToMicrobitBT(`@,${joystickX},${y}\n`);
+    }
 }
 
 
@@ -921,6 +937,61 @@ setInterval(logJoystickValues, 200);
 // █▌                            |_|                 ▐█
 // █▌                                                ▐█
 // ████████████████████████████████████████████████████
+
+
+// LEGGER TIL KODE HER FOR Å HÅNDTERE BYTTING MELLOM INPUT
+// ChatGPT foreslår å heller skrive en virtual joystick-API som kan betjenes av alt, så blir det mindre duplikat kode. Høres elegant ut! Kanskje en annen gang. 
+
+let activeInput = "none"; // "mouse" | "touch" | "gamepad"
+let lastGamepadActivity = 0;
+const GAMEPAD_IDLE_TIMEOUT = 300; // ms
+
+
+function claimPointerInput(type) {
+    activeInput = type;
+}
+
+joystick.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    claimPointerInput("mouse");
+
+    function moveJoystick(event) {
+        updateJoystickPosition(event.clientX, event.clientY);
+    }
+
+    function stopJoystick() {
+        document.removeEventListener("mousemove", moveJoystick);
+        document.removeEventListener("mouseup", stopJoystick);
+        resetJoystick();
+        activeInput = "none";
+    }
+
+    document.addEventListener("mousemove", moveJoystick);
+    document.addEventListener("mouseup", stopJoystick);
+});
+
+
+joystick.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    claimPointerInput("touch");
+
+    function moveJoystick(event) {
+        const t = event.touches[0];
+        updateJoystickPosition(t.clientX, t.clientY);
+    }
+
+    function stopJoystick() {
+        document.removeEventListener("touchmove", moveJoystick);
+        document.removeEventListener("touchend", stopJoystick);
+        resetJoystick();
+        activeInput = "none";
+    }
+
+    document.addEventListener("touchmove", moveJoystick);
+    document.addEventListener("touchend", stopJoystick);
+});
+
+
 
 
 
@@ -956,23 +1027,38 @@ window.addEventListener("gamepaddisconnected", () => {
     resetJoystick();
 });
 
+
+//oppdatert for å håndtere ulik input
+
 function pollGamepad() {
     if (activeGamepadIndex === null) return;
 
-    const gamepad = navigator.getGamepads()[activeGamepadIndex];
-    if (!gamepad) return;
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
 
-    let x = gamepad.axes[0]; // Left stick X
-    let y = gamepad.axes[1]; // Left stick Y
+    let x = gp.axes[0];
+    let y = gp.axes[1];
 
-    // Deadzone
+    const DEADZONE = 0.15;
     if (Math.abs(x) < DEADZONE) x = 0;
     if (Math.abs(y) < DEADZONE) y = 0;
 
-    if (x === 0 && y === 0) {
-        resetJoystick();
-    } else {
+    const hasInput = x !== 0 || y !== 0;
+
+    if (hasInput) {
+        activeInput = "gamepad";
+        lastGamepadActivity = performance.now();
         updateJoystickFromAxes(x, y);
+        return;
+    }
+
+    // Stick neutral — release ownership after timeout
+    if (
+        activeInput === "gamepad" &&
+        performance.now() - lastGamepadActivity > GAMEPAD_IDLE_TIMEOUT
+    ) {
+        resetJoystick();
+        activeInput = "none";
     }
 }
 
@@ -1025,17 +1111,22 @@ function pollGamepadServos() {
 }
 
 
-
-
 function gamepadLoop() {
-    pollGamepad();        // joystick
-    pollGamepadServos();  // triggers → sliders
+    if (activeInput !== "mouse" && activeInput !== "touch") {
+        pollGamepad();
+    }
+    pollGamepadServos(); // triggers can coexist safely
     requestAnimationFrame(gamepadLoop);
 }
+
 
 gamepadLoop();
 
 
+//Denne skal hjelpe å vise hvilket input som er aktivt, men jeg trenger nok noe html også. Pirker i den senere, ingenting går i stykker så langt.
+function setInputClass() {
+    document.body.dataset.input = activeInput;
+}
 
 
 
@@ -1050,6 +1141,8 @@ gamepadLoop();
 // █▌                                                      ▐█
 // ██████████████████████████████████████████████████████████
 
+
+// TODO: Oppdatere kontroll-grensesnittet slik at denne også kan samkjøres med touch/gamepad
 
 let servo1Value = 90;
 let servo2Value = 90;
