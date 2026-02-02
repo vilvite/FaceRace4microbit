@@ -909,7 +909,23 @@ function logJoystickValues() {
 setInterval(logJoystickValues, 200);
 
 
-//GAMEPAD kode her
+
+
+// ████████████████████████████████████████████████████
+// █▌                                                ▐█
+// █▌   ____                                      _  ▐█
+// █▌  / ___| __ _ _ __ ___   ___ _ __   __ _  __| | ▐█
+// █▌ | |  _ / _` | '_ ` _ \ / _ \ '_ \ / _` |/ _` | ▐█
+// █▌ | |_| | (_| | | | | | |  __/ |_) | (_| | (_| | ▐█
+// █▌  \____|\__,_|_| |_| |_|\___| .__/ \__,_|\__,_| ▐█
+// █▌                            |_|                 ▐█
+// █▌                                                ▐█
+// ████████████████████████████████████████████████████
+
+
+
+
+//GAMEPAD joystick kode her
 
 function updateJoystickFromAxes(axisX, axisY) {
     const containerRect = joystickContainer.getBoundingClientRect();
@@ -960,12 +976,66 @@ function pollGamepad() {
     }
 }
 
+
+//Gamepad servo-slidere
+
+function triggerToServo(triggerValue, inverted = false) {
+    // triggerValue: 0 → 1
+    if (triggerValue === 0) return 90;
+
+    if (!inverted) {
+        // 90 → 0
+        return Math.round(90 - triggerValue * 90);
+    } else {
+        // 90 → 180
+        return Math.round(90 + triggerValue * 90);
+    }
+}
+
+function pollGamepadServos() {
+    if (activeGamepadIndex === null) return;
+
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
+
+    // --- Buttons ---
+    const leftTrigger  = gp.buttons[6]?.value || 0; // LT
+    const rightTrigger = gp.buttons[7]?.value || 0; // RT
+    const leftShoulder = gp.buttons[4]?.pressed;    // LB
+    const rightShoulder = gp.buttons[5]?.pressed;    // RB
+
+
+    // --- SERVO 1 (Left Trigger) ---
+    const servo1New = triggerToServo(leftTrigger, leftShoulder);
+
+    if (servo1New !== servo1Value) {
+        servo1Value = servo1New;
+        servo1.value = servo1Value;
+        servo1Label.textContent = servo1Value;
+    }
+
+    // --- SERVO 2 (Right Trigger, same behavior) ---
+    const servo2New = triggerToServo(rightTrigger, rightShoulder);
+
+    if (servo2New !== servo2Value) {
+        servo2Value = servo2New;
+        servo2.value = servo2Value;
+        servo2Label.textContent = servo2Value;
+    }
+}
+
+
+
+
 function gamepadLoop() {
-    pollGamepad();
+    pollGamepad();        // joystick
+    pollGamepadServos();  // triggers → sliders
     requestAnimationFrame(gamepadLoop);
 }
 
 gamepadLoop();
+
+
 
 
 
