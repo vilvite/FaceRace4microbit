@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bitbot-cache-v1';
+const CACHE_NAME = 'bitbot-cache-v1.1';
 const FILES_TO_CACHE = [
   './bitbotremote.html',
   './facerace.html'
@@ -19,3 +19,4 @@ self.addEventListener('fetch', event => {
     )
   );
 });
+
