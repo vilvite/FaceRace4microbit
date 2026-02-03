@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.5.5b</title>
+    <title>BitBotRemote V1.6</title>
     <link rel="manifest" href="remote-manifest.json">
     <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
@@ -436,7 +436,7 @@ body[data-input="gamepad"] #joystick {
 
     </div> 
 <br>
-    <h3>v1.5.5 <a href="./facerace.html"> -</a> 03.02.26</h3> 
+    <h3>v1.6 <a href="./facerace.html"> -</a> 03.02.26</h3> 
 
 </div>
 
@@ -721,6 +721,19 @@ function resetBluetoothSendState() {
 //Denne skal nå huske hva knappene heter.
 const STORAGE_KEY = "macroButtonNames";
 
+//Denne blir tatt ut av funksjonen under, for å gi støtte for gamepad-støtte
+function triggerMacroButton(button) {
+    let message = button.textContent;
+    message = message.replace(/[^\x20-\x7EæøåÆØÅ]/g, "");
+    message = message.trim().slice(0, 14);
+
+    if (!message) return;
+
+    if (connectedBT) sendDataToMicrobitBT(message + "\n");
+    if (connectedUSB) sendDataToMicrobitUSB(message + "\n");
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // Select all macro buttons ONCE
@@ -752,14 +765,7 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", () => {
             if (longPressTriggered) return;
 
-            let message = button.textContent;
-            message = message.replace(/[^\x20-\x7EæøåÆØÅ]/g, "");
-            message = message.trim().slice(0, 14);
-
-            if (!message) return;
-
-            if (connectedBT) sendDataToMicrobitBT(message + "\n");
-            if (connectedUSB) sendDataToMicrobitUSB(message + "\n");
+             triggerMacroButton(button);
         });
 
         button.addEventListener("mousedown", startPress);
@@ -791,6 +797,32 @@ function renameButton(button, index) {
     }
 }
 
+
+//Lister opp knappene på gamepaden som kan fyre av makroknappene
+const GAMEPAD_MACRO_BUTTONS = [0, 1, 2, 3];
+let lastGamepadButtonState = [];
+
+function pollGamepadMacroButtons() {
+    if (activeGamepadIndex === null) return;
+
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
+
+    const buttons = document.querySelectorAll(".macro-btn");
+
+    GAMEPAD_MACRO_BUTTONS.forEach((gpIndex, macroIndex) => {
+        const pressed = gp.buttons[gpIndex]?.pressed;
+
+        if (!lastGamepadButtonState[gpIndex] && pressed) {
+            // rising edge → short press
+            if (buttons[macroIndex]) {
+                triggerMacroButton(buttons[macroIndex]);
+            }
+        }
+
+        lastGamepadButtonState[gpIndex] = pressed;
+    });
+}
 
 
 function resetMacros() {
@@ -824,6 +856,35 @@ const displayValues = document.getElementById("joystickValues");
 let joystickX = 0;
 let joystickY = 0;
 
+
+let lastX = null;
+let lastY = null;
+
+
+//oppdatert i 1.5.6, 
+
+function updateJoystickPosition(clientX, clientY) {
+    const rect = joystickContainer.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    let dx = clientX - rect.left - centerX;
+    let dy = clientY - rect.top - centerY;
+
+    const maxDistance = rect.width / 2 - 10;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > maxDistance) {
+        const scale = maxDistance / distance;
+        dx *= scale;
+        dy *= scale;
+    }
+
+    applyJoystick(dx / maxDistance, dy / maxDistance);
+}
+
+//gammel versjon under
+/*
 function updateJoystickPosition(clientX, clientY) {
     const containerRect = joystickContainer.getBoundingClientRect();
 
@@ -850,15 +911,51 @@ function updateJoystickPosition(clientX, clientY) {
     displayValues.innerText = `X: ${joystickX}, Y: ${joystickY * -1}`;
 }
 
+*/
+
 
 function resetJoystick() {
     joystick.style.transform = "translate(0, 0)";
     joystickX = 0;
     joystickY = 0;
     displayValues.innerText = "X: 0, Y: 0";
+
+    // do not send immediately
+   // sendJoystickToMicrobit(0, 0);
+   logJoystickValues(); // safe, will send only once due to lastX/lastY
 }
 
-//Ny kode, kan bytte input mellom touch/gamepad/mus
+function sendJoystickToMicrobit(x, y) {
+    const msg = `@,${x},${y}\n`;
+    if (connectedUSB) sendDataToMicrobitUSB(msg);
+    if (connectedBT) sendDataToMicrobitBT(msg);
+}
+
+
+
+// Ny i 1.5.6, unify joystick updates
+
+function applyJoystick(xNorm, yNorm) {
+    const containerRect = joystickContainer.getBoundingClientRect();
+    const maxDistance = containerRect.width / 2 - 10;
+
+    const offsetX = xNorm * maxDistance;
+    const offsetY = yNorm * maxDistance;
+
+    joystick.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+    joystickX = Math.round(xNorm * 100);
+    joystickY = Math.round(yNorm * 100);
+
+    displayValues.innerText = `X: ${joystickX}, Y: ${joystickY * -1}`;
+}
+
+
+
+
+
+//her var duplikat kode, sletter øverste paret 
+/*
 joystick.addEventListener("mousedown", (e) => {
     e.preventDefault();
     claimPointerInput("mouse");
@@ -898,11 +995,23 @@ joystick.addEventListener("touchstart", (e) => {
     document.addEventListener("touchend", stopJoystick);
 });
 
-
+*/
 
 // Stuff for steering here
 
-// Fixed joystick values - Y ville ikke samarbeide
+
+function logJoystickValues() {
+    if (joystickX === lastX && joystickY === lastY) return;
+
+    lastX = joystickX;
+    lastY = joystickY;
+
+    sendJoystickToMicrobit(joystickX, joystickY * -1);
+}
+
+
+/*
+// Fixed joystick values - Y ville ikke samarbeide. Endres for å gi snappy reaksjon på at kontrollen slippes.
 function logJoystickValues() {
     if (joystickX === 0 && joystickY === 0) {
         // console.log("🥽 Chilling");
@@ -919,7 +1028,7 @@ function logJoystickValues() {
         sendDataToMicrobitBT(`@,${joystickX},${y}\n`);
     }
 }
-
+*/
 
 // Start the interval for logging
 setInterval(logJoystickValues, 200);
@@ -943,8 +1052,10 @@ setInterval(logJoystickValues, 200);
 // ChatGPT foreslår å heller skrive en virtual joystick-API som kan betjenes av alt, så blir det mindre duplikat kode. Høres elegant ut! Kanskje en annen gang. 
 
 let activeInput = "none"; // "mouse" | "touch" | "gamepad"
-let lastGamepadActivity = 0;
-const GAMEPAD_IDLE_TIMEOUT = 300; // ms
+
+//Dette var dårlig løsning, slettes
+//let lastGamepadActivity = 0;
+//const GAMEPAD_IDLE_TIMEOUT = 300; // ms
 
 
 function claimPointerInput(type) {
@@ -997,7 +1108,7 @@ joystick.addEventListener("touchstart", (e) => {
 
 
 //GAMEPAD joystick kode her
-
+// "replace this with nothing, it is no longer needed"
 function updateJoystickFromAxes(axisX, axisY) {
     const containerRect = joystickContainer.getBoundingClientRect();
     const maxDistance = containerRect.width / 2 - 10;
@@ -1028,8 +1139,6 @@ window.addEventListener("gamepaddisconnected", () => {
 });
 
 
-//oppdatert for å håndtere ulik input
-
 function pollGamepad() {
     if (activeGamepadIndex === null) return;
 
@@ -1039,28 +1148,59 @@ function pollGamepad() {
     let x = gp.axes[0];
     let y = gp.axes[1];
 
-    const DEADZONE = 0.15;
+    let rx = gp.axes[2];
+    let ry = gp.axes[3];
+
     if (Math.abs(x) < DEADZONE) x = 0;
     if (Math.abs(y) < DEADZONE) y = 0;
 
-    const hasInput = x !== 0 || y !== 0;
+    if (Math.abs(rx) < DEADZONE) rx = 0;
+    if (Math.abs(ry) < DEADZONE) ry = 0;
 
-    if (hasInput) {
+    if (rx !== 0 || ry !== 0) {
         activeInput = "gamepad";
-        lastGamepadActivity = performance.now();
-        updateJoystickFromAxes(x, y);
+        updateColorWheelFromJoystick(rx, ry);
+    }
+
+    if (x === 0 && y === 0) {
+        if (activeInput === "gamepad") {
+            resetJoystick();
+            activeInput = "none";
+        }
         return;
     }
 
-    // Stick neutral — release ownership after timeout
-    if (
-        activeInput === "gamepad" &&
-        performance.now() - lastGamepadActivity > GAMEPAD_IDLE_TIMEOUT
-    ) {
-        resetJoystick();
-        activeInput = "none";
-    }
+    activeInput = "gamepad";
+    applyJoystick(x, y);
 }
+
+
+
+/* Backup om denne går i dass av å legge til høyrestikka
+function pollGamepad() {
+    if (activeGamepadIndex === null) return;
+
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
+
+    let x = gp.axes[0];
+    let y = gp.axes[1];
+
+    if (Math.abs(x) < DEADZONE) x = 0;
+    if (Math.abs(y) < DEADZONE) y = 0;
+
+    if (x === 0 && y === 0) {
+        if (activeInput === "gamepad") {
+            resetJoystick();
+            activeInput = "none";
+        }
+        return;
+    }
+
+    activeInput = "gamepad";
+    applyJoystick(x, y);
+}
+*/
 
 
 //Gamepad servo-slidere
@@ -1111,11 +1251,36 @@ function pollGamepadServos() {
 }
 
 
+// Gamepad fargeklikkeknapp
+let lastRightStickPressed = false;
+
+function pollColorWheelButton() {
+    if (activeGamepadIndex === null) return;
+
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
+
+    const rightStickPressed = gp.buttons[11]?.pressed; // B11 = right stick click
+
+    if (rightStickPressed && !lastRightStickPressed) {
+        // Button just pressed → send color
+        logColor();
+    }
+
+    lastRightStickPressed = rightStickPressed;
+}
+
+
+
 function gamepadLoop() {
     if (activeInput !== "mouse" && activeInput !== "touch") {
         pollGamepad();
+        pollColorWheelButton();       // right stick press
     }
     pollGamepadServos(); // triggers can coexist safely
+    pollGamepadMacroButtons();
+
+
     requestAnimationFrame(gamepadLoop);
 }
 
@@ -1269,8 +1434,10 @@ const canvas = document.getElementById('color-wheel');
             const pixel = ctx.getImageData(x, y, 1, 1).data;
             return `#${pixel[0].toString(16).padStart(2, '0')}${pixel[1].toString(16).padStart(2, '0')}${pixel[2].toString(16).padStart(2, '0')}`;
         }
-        
-        function updateColor(event) {
+
+
+//Endelig oppdatert i 1.6, nå blir ikke ytterkanten blank
+function updateColor(event) {
     const rect = canvas.getBoundingClientRect();
     const radius = canvas.width / 2;
 
@@ -1283,26 +1450,32 @@ const canvas = document.getElementById('color-wheel');
         ? event.touches[0].clientY - rect.top
         : event.offsetY;
 
-    // Convert to center-based coordinates
+    // Center coordinates
     let dx = x - radius;
     let dy = y - radius;
 
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // 🔒 Clamp to circle
+    // Clamp to circle
+    let clampedDx = dx;
+    let clampedDy = dy;
     if (distance > radius) {
         const scale = radius / distance;
-        dx *= scale;
-        dy *= scale;
-
-        x = dx + radius;
-        y = dy + radius;
+        clampedDx *= scale;
+        clampedDy *= scale;
     }
 
-    // Update color + UI
-    lastColor = getColorAtPosition(Math.floor(x), Math.floor(y));
-    crosshair.style.left = `${x}px`;
-    crosshair.style.top = `${y}px`;
+    // Compute color from angle & saturation
+    const angle = Math.atan2(clampedDy, clampedDx) + Math.PI; // 0..2π
+    const hue = (angle / (2 * Math.PI)) * 360;
+    const saturation = Math.min(Math.sqrt(clampedDx*clampedDx + clampedDy*clampedDy) / radius, 1);
+    const [r, g, b] = hslToRgb(hue, saturation, 0.5);
+
+    lastColor = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+
+    // Update crosshair & display
+    crosshair.style.left = `${clampedDx + radius}px`;
+    crosshair.style.top = `${clampedDy + radius}px`;
     colorDisplay.textContent = lastColor;
     colorDisplay.style.color = lastColor;
     colorDisplay.style.borderColor = lastColor;
@@ -1310,18 +1483,9 @@ const canvas = document.getElementById('color-wheel');
 
 
 
-        /* Byttes ut for å holde musepekeren fanget
-        function updateColor(event) {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.touches ? event.touches[0].clientX - rect.left : event.offsetX;
-            const y = event.touches ? event.touches[0].clientY - rect.top : event.offsetY;
-            
-            lastColor = getColorAtPosition(x, y);
-            crosshair.style.left = `${x}px`;
-            crosshair.style.top = `${y}px`;
-            colorDisplay.textContent = lastColor;
-        }
-        */
+
+
+ 
         function logColor() {
             rgbConvert = hexToRgb(lastColor); //convert hex to rgb
         //    console.log('Selected Color:', rgbConvert);
@@ -1342,10 +1506,6 @@ const canvas = document.getElementById('color-wheel');
     
         canvas.addEventListener('mousedown', () => canvas.addEventListener('mousemove', updateColor));
         canvas.addEventListener('mouseup', onMouseUp);
-        //canvas.addEventListener('mouseup', () => canvas.removeEventListener('mousemove', updateColor));
-        //canvas.addEventListener('touchstart', updateColor);
-        //canvas.addEventListener('touchmove', updateColor);
-        //canvas.addEventListener('touchend', (event) => event.preventDefault());
         canvas.addEventListener('touchstart', updateColor, { passive: false });
         canvas.addEventListener('touchmove', (event) => {
             event.preventDefault(); // stop page scrolling
@@ -1364,6 +1524,49 @@ function hexToRgb(hex) {
 }
 
 
+//Gamepad-støtte til fargehjulet
+
+// Map joystick axes to color wheel coordinates
+function updateColorWheelFromJoystick(axisX, axisY) {
+    const radius = canvas.width / 2;
+
+    // Deadzone clamp
+    if (Math.abs(axisX) < DEADZONE) axisX = 0;
+    if (Math.abs(axisY) < DEADZONE) axisY = 0;
+
+    // Map axes (-1..1) → canvas coordinates (-radius..radius)
+    let dx = axisX * radius;
+    let dy = axisY * radius;
+
+    // Optional: If joystick at 0,0 treat as black
+    if (dx === 0 && dy === 0) {
+        lastColor = "#000000";
+        crosshair.style.left = `${radius}px`;
+        crosshair.style.top = `${radius}px`;
+        colorDisplay.textContent = lastColor;
+        colorDisplay.style.color = lastColor;
+        colorDisplay.style.borderColor = lastColor;
+        return;
+    }
+
+    // Compute angle & saturation like before
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    const angle = Math.atan2(dy, dx) + Math.PI;
+    const hue = (angle / (2 * Math.PI)) * 360;
+    const saturation = Math.min(distance / radius, 1);
+
+    const [r, g, b] = hslToRgb(hue, saturation, 0.5);
+    lastColor = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+
+    // Update crosshair
+    crosshair.style.left = `${dx + radius}px`;
+    crosshair.style.top = `${dy + radius}px`;
+
+    // Update display
+    colorDisplay.textContent = lastColor;
+    colorDisplay.style.color = lastColor;
+    colorDisplay.style.borderColor = lastColor;
+}
 
 
 
@@ -1448,6 +1651,197 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js');
   });
 }
+
+
+/* UPDATE SUGGESTION for å skrive om hele joystick-koden
+
+// ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
+// ▐             JOYSTICK HANDLING             ▌
+// ▐  unified mouse/touch/gamepad, single send ▌
+// ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
+
+const joystick = document.getElementById("joystick");
+const joystickContainer = document.getElementById("joystickContainer");
+const displayValues = document.getElementById("joystickValues");
+
+let joystickX = 0;
+let joystickY = 0;
+
+let lastX = null;
+let lastY = null;
+
+let activeInput = "none"; // "mouse" | "touch" | "gamepad"
+let activeGamepadIndex = null;
+const DEADZONE = 0.15;
+
+// ------------------------
+// Unified visual & logical update
+// ------------------------
+function applyJoystick(xNorm, yNorm) {
+    const rect = joystickContainer.getBoundingClientRect();
+    const maxDistance = rect.width / 2 - 10;
+
+    const offsetX = xNorm * maxDistance;
+    const offsetY = yNorm * maxDistance;
+
+    joystick.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+    joystickX = Math.round(xNorm * 100);
+    joystickY = Math.round(yNorm * 100);
+
+    displayValues.innerText = `X: ${joystickX}, Y: ${joystickY * -1}`;
+}
+
+// ------------------------
+// Reset to neutral (0,0)
+// ------------------------
+function resetJoystick() {
+    applyJoystick(0, 0);
+    activeInput = "none";
+
+    // optional: send immediately, safe due to lastX/lastY tracking
+    logJoystickValues();
+}
+
+// ------------------------
+// Mouse / touch handlers
+// ------------------------
+function claimPointerInput(type) {
+    activeInput = type;
+}
+
+function setupPointerJoystick() {
+    joystick.addEventListener("mousedown", startPointer);
+    joystick.addEventListener("touchstart", startPointer);
+
+    function startPointer(e) {
+        e.preventDefault();
+        const type = e.type === "mousedown" ? "mouse" : "touch";
+        claimPointerInput(type);
+
+        function move(event) {
+            const clientX = event.type.startsWith("touch") ? event.touches[0].clientX : event.clientX;
+            const clientY = event.type.startsWith("touch") ? event.touches[0].clientY : event.clientY;
+            updateJoystickPosition(clientX, clientY);
+        }
+
+        function stop() {
+            document.removeEventListener("mousemove", move);
+            document.removeEventListener("mouseup", stop);
+            document.removeEventListener("touchmove", move);
+            document.removeEventListener("touchend", stop);
+            resetJoystick();
+        }
+
+        if (type === "mouse") {
+            document.addEventListener("mousemove", move);
+            document.addEventListener("mouseup", stop);
+        } else {
+            document.addEventListener("touchmove", move);
+            document.addEventListener("touchend", stop);
+            document.addEventListener("touchcancel", stop);
+        }
+    }
+}
+
+function updateJoystickPosition(clientX, clientY) {
+    const rect = joystickContainer.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    let dx = clientX - rect.left - centerX;
+    let dy = clientY - rect.top - centerY;
+
+    const maxDistance = rect.width / 2 - 10;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > maxDistance) {
+        const scale = maxDistance / distance;
+        dx *= scale;
+        dy *= scale;
+    }
+
+    applyJoystick(dx / maxDistance, dy / maxDistance);
+}
+
+// ------------------------
+// Send values to micro:bit (USB/BT)
+// ------------------------
+function sendJoystickToMicrobit(x, y) {
+    const msg = `@,${x},${y}\n`;
+    if (connectedUSB) sendDataToMicrobitUSB(msg);
+    if (connectedBT) sendDataToMicrobitBT(msg);
+}
+
+// ------------------------
+// Logging interval (only send if changed)
+// ------------------------
+function logJoystickValues() {
+    if (joystickX === lastX && joystickY === lastY) return;
+
+    lastX = joystickX;
+    lastY = joystickY;
+
+    sendJoystickToMicrobit(joystickX, joystickY * -1);
+}
+
+setInterval(logJoystickValues, 200);
+
+// ------------------------
+// Gamepad handling
+// ------------------------
+window.addEventListener("gamepadconnected", (e) => {
+    console.log("Gamepad connected:", e.gamepad.id);
+    activeGamepadIndex = e.gamepad.index;
+});
+
+window.addEventListener("gamepaddisconnected", () => {
+    console.log("Gamepad disconnected");
+    activeGamepadIndex = null;
+    resetJoystick();
+});
+
+function pollGamepad() {
+    if (activeGamepadIndex === null) return;
+
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
+
+    let x = gp.axes[0];
+    let y = gp.axes[1];
+
+    if (Math.abs(x) < DEADZONE) x = 0;
+    if (Math.abs(y) < DEADZONE) y = 0;
+
+    if (x === 0 && y === 0) {
+        if (activeInput === "gamepad") resetJoystick();
+        return;
+    }
+
+    activeInput = "gamepad";
+    applyJoystick(x, y);
+}
+
+// ------------------------
+// Main gamepad loop
+// ------------------------
+function gamepadLoop() {
+    if (activeInput !== "mouse" && activeInput !== "touch") {
+        pollGamepad();
+    }
+    pollGamepadServos();     // triggers coexisting safely
+    pollGamepadMacroButtons(); // buttons if implemented
+    requestAnimationFrame(gamepadLoop);
+}
+
+// ------------------------
+// Init
+// ------------------------
+setupPointerJoystick();
+gamepadLoop();
+
+
+*/
 
 
 </script>
