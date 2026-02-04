@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#12d633" />
-    <title>BitBotRemote V1.6</title>
+    <title>BitBotRemote V1.6.2</title>
     <link rel="manifest" href="remote-manifest.json">
     <link rel="shortcut icon" type="image/png" href="icon/128.png">
 
@@ -330,6 +330,118 @@ body[data-input="gamepad"] #joystick {
     }
 }
 
+/*Svak blur hvis vinduet havner ut av fokus, for å indikere at gamepad o.l. ikke lenger registreres*/
+
+/* Page blur when browser loses focus */
+body.blurred {
+    filter: blur(3px);
+    opacity: 0.75;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+/* Prevent blur from breaking layout clicks */
+html, body {
+    height: 100%;
+}
+
+/*Controller mode, denne ble skrevet om*/
+
+body.controller-sleep {
+    background: black;
+    color: transparent;
+    overflow: hidden;
+}
+
+body.controller-sleep * {
+    pointer-events: none;
+}
+
+/* Keep overlay interactive */
+#controller-overlay {
+    pointer-events: auto;
+}
+
+#controller-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: black;
+    font-size: 64px;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: opacity 0.2s ease;
+}
+
+#controller-overlay.active {
+    opacity: 0.15;
+    visibility: visible;
+    pointer-events: auto;
+    animation: spin 6s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Fullscreen black overlay */
+#sleep-overlay {
+    position: fixed;
+    inset: 0;
+    background: black;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: opacity 0.3s ease;
+    z-index: 9999; /* above everything */
+}
+
+/* Active state */
+#sleep-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Emoji styling */
+#sleep-emoji {
+    font-size: 72px;
+    opacity: 0.2;
+    animation: drift-spin 8s linear infinite;
+}
+
+/* Burn-in safe motion */
+@keyframes drift-spin {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    25% {
+        transform: translate(12px, -8px) rotate(90deg);
+    }
+    50% {
+        transform: translate(-10px, 10px) rotate(180deg);
+    }
+    75% {
+        transform: translate(8px, 6px) rotate(270deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(360deg);
+    }
+}
+
+
     </style>
 </head>
 
@@ -352,7 +464,6 @@ body[data-input="gamepad"] #joystick {
 
 
 <body>
-
 
 
 
@@ -402,6 +513,7 @@ body[data-input="gamepad"] #joystick {
         <br>
         <br>
         <button onclick="resetMacros()"><i>Nullstill</i></button>
+        <button onclick="enterControllerSleep()">🎮</button>
         </div>
     </div>
 
@@ -426,20 +538,25 @@ body[data-input="gamepad"] #joystick {
         <br>        
             <button id="connectButtonBT">Connect to micro:bit <b>Bluetooth</b></button>
             
-            <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_AbJW2wbvddPR','_blank')"><i>Eksempelkode Bluetooth</i></button>
+            <button id="demoLinkBT" onclick=" window.open('https://makecode.microbit.org/#pub:_0uL0Ku5bM7V2','_blank')"><i>Eksempelkode Bluetooth</i></button>
             <br>        
             <button id="connectButton">Connect to micro:bit <b>USB</b></button>
-            <button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_8qUaxXVjWMMY','_blank')"><i>Eksempelkode USB</i></button>
+            <button id="demoLinkUSB" onclick=" window.open('https://makecode.microbit.org/#pub:_56yWrxYX1L73','_blank')"><i>Eksempelkode USB</i></button>
             <br>
-            <button id="demoLinkUSB2" onclick=" window.open('https://makecode.microbit.org/#pub:_Prc2oqbmxHWc','_blank')"><i>Kitronik MOVE (Kun USB)</i></button>
+            <button id="demoLinkUSB2" onclick=" window.open('https://makecode.microbit.org/#pub:_U9635oFc0gUj','_blank')"><i>Kitronik MOVE (Kun USB)</i></button>
         </div>
 
     </div> 
 <br>
-    <h3>v1.6 <a href="./facerace.html"> -</a> 03.02.26</h3> 
+    <h3>v1.6.2 <a href="./facerace.html"> -</a> 03.02.26</h3> 
+
+    
 
 </div>
 
+<div id="sleep-overlay">
+    <div id="sleep-emoji">🎮</div>
+  </div>
 
 <script>
 
@@ -1053,9 +1170,21 @@ setInterval(logJoystickValues, 200);
 
 let activeInput = "none"; // "mouse" | "touch" | "gamepad"
 
-//Dette var dårlig løsning, slettes
-//let lastGamepadActivity = 0;
-//const GAMEPAD_IDLE_TIMEOUT = 300; // ms
+let isBlurred = false;
+
+//Legger til denne tre her for å fange opp at vinduet ikke er i fokus, og at gamepad-input ikke lenger blir mottatt
+window.addEventListener("blur", () => {
+    document.body.classList.add("blurred");
+    isBlurred = true;
+});
+
+window.addEventListener("focus", () => {
+    document.body.classList.remove("blurred");
+    isBlurred = false;
+});
+
+
+
 
 
 function claimPointerInput(type) {
@@ -1273,13 +1402,14 @@ function pollColorWheelButton() {
 
 
 function gamepadLoop() {
-    if (activeInput !== "mouse" && activeInput !== "touch") {
-        pollGamepad();
-        pollColorWheelButton();       // right stick press
-    }
-    pollGamepadServos(); // triggers can coexist safely
-    pollGamepadMacroButtons();
-
+  //  if (!isBlurred) { //denne vil hindre at joysticken smeller til 0 hvis vinduet blir ufokusert, men det høres egentlig ut som en sikkerhetsfunksjon. Lar den være slik.
+        if (activeInput !== "mouse" && activeInput !== "touch") {
+            pollGamepad();
+            pollColorWheelButton();       // right stick press
+        }
+        pollGamepadServos(); // triggers can coexist safely
+        pollGamepadMacroButtons();
+  //  }
 
     requestAnimationFrame(gamepadLoop);
 }
@@ -1616,7 +1746,88 @@ const outputElement = document.getElementById("output");
 
 
 
+// Wake lock, så mobiltelefon kan funke som fjernkontroll uten å slukne. Gjenskapt av screenshots tatt fra googling på busstur til ViteMeir-kveld
 
+let wakeLock = null;
+
+async function enableWakeLock() {
+    try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        console.log("Wake Lock active");
+
+        wakeLock.addEventListener("release", () => {
+            console.log("Wake Lock released");
+        });
+
+    } catch (err) {
+        console.error(`${err.name}: ${err.message}`);
+    }
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && wakeLock === null) {
+        enableWakeLock();
+    }
+});
+
+//funksjon for å deaktivere wake lock function 
+function disableWakeLock(){ 
+    if (wakeLock !== null) { 
+        wakeLock.release(); 
+        wakeLock = null; 
+        console.log('Screen Wake Lock Released'); } 
+}
+
+
+let controllerSleep = false;
+function enterControllerSleep() {
+    controllerSleep = true;
+    document.getElementById("sleep-overlay").classList.add("active");
+    enableWakeLock();
+}
+
+function exitControllerSleep() {
+    controllerSleep = false;
+    document.getElementById("sleep-overlay").classList.remove("active");
+    disableWakeLock();
+}
+document.getElementById("sleep-overlay").addEventListener("pointerdown", () => {
+    exitControllerSleep();
+});
+
+
+/* Anbefalt, å kunne forlate modus ved å klikke på start eller R3. Må da legges til i gamepadloop
+function pollSleepExitButton() {
+    if (!controllerSleep || activeGamepadIndex === null) return;
+
+    const gp = navigator.getGamepads()[activeGamepadIndex];
+    if (!gp) return;
+
+    if (gp.buttons[9]?.pressed || gp.buttons[11]?.pressed) {
+        exitControllerSleep();
+    }
+}
+
+*/
+
+//Alternativ automatisk aktivering av wakelock.
+
+
+/*
+
+let lastPointerTime = Date.now();
+
+document.addEventListener("pointermove", () => {
+    lastPointerTime = Date.now();
+});
+
+setInterval(() => {
+    if (!controllerSleep && Date.now() - lastPointerTime > 10000) {
+        enterControllerSleep();
+    }
+}, 1000);
+
+*/
 
 
 
